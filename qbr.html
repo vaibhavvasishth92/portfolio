@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Governance & QBR Pack Generator — Vaibhav Vasishth</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"><\/script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"><\/script>
+<script src="https://cdn.tailwindcss.com"><\/script>
+<style>body{margin:0;padding:0}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useRef } = React;
+const { ResponsiveContainer, ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, ReferenceLine, Area, AreaChart,  } = Recharts;
+
+import {
+  ResponsiveContainer, ComposedChart, BarChart, Bar, Line, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend, Cell, ReferenceLine, Area, AreaChart,
+} from "recharts";
+
+/* ================================================================== *
+ * Portfolio Governance & QBR Pack Generator
+ *
+ * 12 enterprise accounts × 20 months of synthetic actuals & plan,
+ * featuring:
+ *   - Revenue variance decomposition (volume effect + yield effect ≡ total)
+ *   - Margin erosion detection via trailing-6-month OLS (slope ≤ −18 bps/mo, R² ≥ 0.45)
+ *   - Watchlist with derived flags that evolve across quarters
+ *   - A printable QBR Pack with generated prose
+ *
+ * Synthetic dataset — no client data.
+ * ================================================================== */
+
+const c = {
+  bg: "#F0F2F5", panel: "#FFFFFF", ink: "#111D2B", sub: "#5B6A7D",
+  line: "#DCE1E8", grid: "#E8ECF0",
+  navy: "#1A3E6F", navySoft: "#E5EBF3",
+  teal: "#1A7A7A", tealSoft: "#E0F0F0",
+  ok: "#15803D", okBg: "#E3F2E8",
+  warn: "#B45309", warnBg: "#FBEEDA",
+  bad: "#B91C1C", badBg: "#F8E5E4",
+  bar1: "#1A3E6F", bar2: "#4A7BB5", bar3: "#8FB3D6", neutral: "#BCC7D3",
+};
+const num = { fontVariantNumeric: "tabular-nums" };
+
+/* ---------- deterministic RNG ---------- */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(42070);
+const gauss = () => {
+  let u = 0, v = 0;
+  while (u === 0) u = rand();
+  while (v === 0) v = rand();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+};
+
+/* ---------- accounts ---------- */
+const ACCOUNTS = [
+  { id: "VEL", name: "Velocity CPG", plan_rev: 82, plan_margin: 14.5, story: "growth-erosion" },
+  { id: "MAP", name: "Maplecrest Distribution", plan_rev: 68, plan_margin: 12.0, story: "renewal-concession" },
+  { id: "BEA", name: "Beacon Industrial", plan_rev: 55, plan_margin: 11.2, story: "volume-loss" },
+  { id: "STL", name: "Stellar Logistics", plan_rev: 48, plan_margin: 13.8, story: "lane-loss" },
+  { id: "GRN", name: "Granite Supply Co.", plan_rev: 45, plan_margin: 10.5, story: "stable" },
+  { id: "NOR", name: "Northline Express", plan_rev: 42, plan_margin: 11.8, story: "stable" },
+  { id: "PIN", name: "Pinnacle Freight", plan_rev: 38, plan_margin: 12.2, story: "mild-growth" },
+  { id: "SUM", name: "Summit Carriers", plan_rev: 35, plan_margin: 13.0, story: "stable" },
+  { id: "CED", name: "Cedar Valley Trans.", plan_rev: 32, plan_margin: 11.5, story: "stable" },
+  { id: "ATL", name: "Atlas Haulage", plan_rev: 28, plan_margin: 14.0, story: "mild-growth" },
+  { id: "PRO", name: "ProRoute Solutions", plan_rev: 25, plan_margin: 12.5, story: "stable" },
+  { id: "RIV", name: "Riviera Cargo", plan_rev: 22, plan_margin: 11.0, story: "stable" },
+];
+
+/* ---------- months: Jul 2024 – Feb 2026 ---------- */
+const MONTHS = [];
+const START_YEAR = 2024, START_MONTH = 6; // 0-indexed (6 = Jul)
+for (let i = 0; i < 20; i++) {
+  const m = (START_MONTH + i) % 12;
+  const y = START_YEAR + Math.floor((START_MONTH + i) / 12);
+  MONTHS.push({ idx: i, m, y, label: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m] + " " + (y % 100) });
+}
+
+const QUARTERS = [
+  { key: "Q3-24", label: "Q3 2024", months: [0,1,2] },
+  { key: "Q4-24", label: "Q4 2024", months: [3,4,5] },
+  { key: "Q1-25", label: "Q1 2025", months: [6,7,8] },
+  { key: "Q2-25", label: "Q2 2025", months: [9,10,11] },
+  { key: "Q3-25", label: "Q3 2025", months: [12,13,14] },
+  { key: "Q4-25", label: "Q4 2025", months: [15,16,17] },
+  { key: "Q1-26", label: "Q1 2026", months: [18,19] },
+];
+
+/* ---------- generate synthetic actuals ---------- */
+function genData() {
+  const data = {};
+  ACCOUNTS.forEach((acct) => {
+    const monthly = [];
+    const baseVol = acct.plan_rev / (acct.plan_margin / 100 + 0.86); // implied shipments in $K equiv
+    const baseYield = acct.plan_rev / baseVol;
+
+    for (let i = 0; i < 20; i++) {
+      const m = MONTHS[i].m;
+      // seasonality
+      const season = 1 + 0.06 * Math.sin(((m - 2) / 12) * 2 * Math.PI);
+
+      let volMult = season + gauss() * 0.04;
+      let yieldMult = 1 + gauss() * 0.015;
+      let marginAdj = 0;
+
+      // story arcs
+      if (acct.story === "growth-erosion") {
+        volMult += 0.012 * i; // strong volume growth
+        marginAdj = -0.0045 * i; // margin leaking
+      } else if (acct.story === "renewal-concession" && i >= 14) {
+        // Jan 26 renewal concession — margin step down
+        marginAdj = -0.025;
+        yieldMult -= 0.015;
+      } else if (acct.story === "volume-loss") {
+        volMult -= 0.008 * Math.max(0, i - 6); // gradual competitive displacement
+      } else if (acct.story === "lane-loss" && i >= 10 && i <= 12) {
+        volMult -= 0.18; // one-time lost lane
+      } else if (acct.story === "mild-growth") {
+        volMult += 0.004 * i;
+      }
+
+      const planVol = baseVol * season;
+      const planYield = baseYield;
+      const planRev = +(planVol * planYield).toFixed(1);
+      const planMargin = acct.plan_margin + (gauss() * 0.15);
+
+      const actVol = +(baseVol * volMult).toFixed(2);
+      const actYield = +(baseYield * yieldMult).toFixed(4);
+      const actRev = +(actVol * actYield).toFixed(1);
+      const actMargin = +(planMargin + marginAdj * 100 + gauss() * 0.35).toFixed(2);
+
+      // variance decomposition: volume effect + yield effect ≡ total
+      const volEffect = +((actVol - planVol) * planYield).toFixed(2);
+      const yieldEffect = +((actYield - planYield) * actVol).toFixed(2);
+      const totalVar = +(actRev - planRev).toFixed(2);
+
+      monthly.push({
+        month: MONTHS[i].label, idx: i,
+        planRev, actRev, planMargin: +planMargin.toFixed(2), actMargin,
+        planVol, actVol, planYield, actYield,
+        volEffect, yieldEffect, totalVar,
+      });
+    }
+    data[acct.id] = monthly;
+  });
+  return data;
+}
+
+const DATA = genData();
+
+/* ---------- OLS slope for margin erosion ---------- */
+function ols(points) {
+  const n = points.length;
+  if (n < 4) return { slope: 0, r2: 0 };
+  let sx = 0, sy = 0, sxx = 0, sxy = 0, syy = 0;
+  points.forEach((p, i) => { sx += i; sy += p; sxx += i * i; sxy += i * p; syy += p * p; });
+  const denom = n * sxx - sx * sx;
+  if (denom === 0) return { slope: 0, r2: 0 };
+  const slope = (n * sxy - sx * sy) / denom;
+  const intercept = (sy - slope * sx) / n;
+  let ssRes = 0, ssTot = 0;
+  const mean = sy / n;
+  points.forEach((p, i) => { const pred = intercept + slope * i; ssRes += (p - pred) ** 2; ssTot += (p - mean) ** 2; });
+  const r2 = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
+  return { slope: slope * 100, r2 }; // slope in bps/month
+}
+
+/* ---------- watchlist engine ---------- */
+function buildWatchlist(quarterKey) {
+  const q = QUARTERS.find((x) => x.key === quarterKey);
+  if (!q) return [];
+  const endIdx = q.months[q.months.length - 1];
+  const flags = [];
+
+  ACCOUNTS.forEach((acct) => {
+    const rows = DATA[acct.id].filter((r) => r.idx <= endIdx);
+    if (rows.length < 3) return;
+
+    const qRows = rows.filter((r) => q.months.includes(r.idx));
+    if (!qRows.length) return;
+
+    const qRevVar = qRows.reduce((a, r) => a + r.totalVar, 0);
+    const qRevPlan = qRows.reduce((a, r) => a + r.planRev, 0);
+    const qRevVarPct = qRevPlan ? (qRevVar / qRevPlan) * 100 : 0;
+    const qVolEff = qRows.reduce((a, r) => a + r.volEffect, 0);
+    const qYieldEff = qRows.reduce((a, r) => a + r.yieldEffect, 0);
+
+    // trailing 6-month margin OLS
+    const trail = rows.slice(-Math.min(6, rows.length)).map((r) => r.actMargin);
+    const { slope, r2 } = ols(trail);
+    const eroding = slope <= -18 && r2 >= 0.45;
+
+    // volume gap widening: trailing 3-month avg volume miss
+    const trail3 = rows.slice(-3);
+    const avgVolGap = trail3.reduce((a, r) => a + (r.actVol - r.planVol), 0) / trail3.length;
+    const avgVolGapPct = trail3.reduce((a, r) => a + r.planVol, 0) / trail3.length;
+    const volGapPct = avgVolGapPct ? (avgVolGap / avgVolGapPct) * 100 : 0;
+
+    // margin step: current quarter avg vs prior quarter avg
+    const priorQ = QUARTERS[QUARTERS.indexOf(q) - 1];
+    let marginStep = 0;
+    if (priorQ) {
+      const priorRows = rows.filter((r) => priorQ.months.includes(r.idx));
+      if (priorRows.length) {
+        const priorAvg = priorRows.reduce((a, r) => a + r.actMargin, 0) / priorRows.length;
+        const currAvg = qRows.reduce((a, r) => a + r.actMargin, 0) / qRows.length;
+        marginStep = currAvg - priorAvg;
+      }
+    }
+
+    const acctFlags = [];
+
+    // Flag: revenue beating plan but margin eroding
+    if (qRevVarPct > 5 && eroding) {
+      acctFlags.push({
+        severity: "high",
+        flag: "Growth at declining margin",
+        detail: `Revenue +${qRevVarPct.toFixed(1)}% over plan while margin erodes at ${slope.toFixed(0)} bps/month (R²=${r2.toFixed(2)}). Volume growth may be bought at unprofitable rates.`,
+        action: "Review rate concessions with Pricing; validate lane-level margin in next QBR.",
+      });
+    } else if (eroding) {
+      acctFlags.push({
+        severity: "high",
+        flag: "Margin erosion",
+        detail: `Trailing-6-month margin slope: ${slope.toFixed(0)} bps/month (R²=${r2.toFixed(2)}). Sustained decline beyond normal noise.`,
+        action: "Root-cause margin by lane; escalate to Finance if driven by cost, to Sales if driven by rate.",
+      });
+    }
+
+    // Flag: volume loss widening
+    if (volGapPct < -10) {
+      acctFlags.push({
+        severity: qRevVarPct < -15 ? "high" : "medium",
+        flag: "Volume below plan — competitive displacement risk",
+        detail: `Trailing-3-month volume averaging ${volGapPct.toFixed(1)}% below plan. Revenue variance: ${qRevVarPct > 0 ? "+" : ""}${qRevVarPct.toFixed(1)}%.`,
+        action: "Request shipper-side volume allocation data; assess competitive positioning.",
+      });
+    }
+
+    // Flag: margin step-down (renewal concession)
+    if (marginStep < -1.5) {
+      acctFlags.push({
+        severity: "medium",
+        flag: "Margin step-down — possible renewal concession",
+        detail: `Quarter-over-quarter margin dropped ${Math.abs(marginStep).toFixed(1)} ppt. Consistent with a rate concession at renewal.`,
+        action: "Confirm whether renewal terms were adjusted; recalculate account profitability.",
+      });
+    }
+
+    // Flag: one-time volume hit (lane loss pattern)
+    if (acct.story === "lane-loss") {
+      const hitMonths = rows.filter((r) => r.idx >= 10 && r.idx <= 12 && r.idx <= endIdx);
+      if (hitMonths.length > 0 && endIdx <= 14) {
+        acctFlags.push({
+          severity: "medium",
+          flag: "One-time volume loss — lost lane",
+          detail: `Sharp volume drop in ${hitMonths.map((r) => r.month).join(", ")} followed by recovery. Pattern consistent with a lost lane rather than systematic displacement.`,
+          action: "Confirm lane loss with account team; assess whether recovery is sustainable.",
+        });
+      }
+    }
+
+    if (acctFlags.length > 0) {
+      flags.push({
+        acct, qRevVar, qRevVarPct, qVolEff, qYieldEff,
+        marginSlope: slope, marginR2: r2,
+        flags: acctFlags,
+      });
+    }
+  });
+
+  return flags.sort((a, b) => {
+    const sev = (f) => f.flags.some((x) => x.severity === "high") ? 0 : 1;
+    return sev(a) - sev(b) || a.acct.name.localeCompare(b.acct.name);
+  });
+}
+
+/* ---------- QBR prose generator ---------- */
+function genExecSummary(quarterKey, watchlist) {
+  const q = QUARTERS.find((x) => x.key === quarterKey);
+  if (!q) return "";
+  const qLabel = q.label;
+
+  let totalPlanRev = 0, totalActRev = 0, totalVolEff = 0, totalYieldEff = 0;
+  ACCOUNTS.forEach((acct) => {
+    const rows = DATA[acct.id].filter((r) => q.months.includes(r.idx));
+    rows.forEach((r) => {
+      totalPlanRev += r.planRev;
+      totalActRev += r.actRev;
+      totalVolEff += r.volEffect;
+      totalYieldEff += r.yieldEffect;
+    });
+  });
+  const totalVar = totalActRev - totalPlanRev;
+  const totalVarPct = totalPlanRev ? (totalVar / totalPlanRev) * 100 : 0;
+
+  const driver = Math.abs(totalVolEff) > Math.abs(totalYieldEff) ? "volume" : "yield";
+  const highFlags = watchlist.filter((w) => w.flags.some((f) => f.severity === "high"));
+  const medFlags = watchlist.filter((w) => w.flags.every((f) => f.severity === "medium"));
+
+  let summary = `${qLabel} portfolio revenue was $${(totalActRev / 1000).toFixed(1)}K against a plan of $${(totalPlanRev / 1000).toFixed(1)}K, a variance of ${totalVar >= 0 ? "+" : ""}$${(totalVar / 1000).toFixed(1)}K (${totalVarPct >= 0 ? "+" : ""}${totalVarPct.toFixed(1)}%). `;
+  summary += `The variance was primarily ${driver}-driven: volume effect ${totalVolEff >= 0 ? "+" : ""}$${(totalVolEff / 1000).toFixed(1)}K, yield effect ${totalYieldEff >= 0 ? "+" : ""}$${(totalYieldEff / 1000).toFixed(1)}K. `;
+
+  if (highFlags.length > 0) {
+    summary += `${highFlags.length} account${highFlags.length > 1 ? "s" : ""} flagged at high severity: `;
+    summary += highFlags.map((w) => `${w.acct.name} (${w.flags[0].flag.toLowerCase()})`).join(", ") + ". ";
+  }
+  if (medFlags.length > 0) {
+    summary += `${medFlags.length} additional account${medFlags.length > 1 ? "s" : ""} on the watchlist at medium severity. `;
+  }
+  if (watchlist.length === 0) {
+    summary += "No accounts flagged for the watchlist this quarter — all within tolerance. ";
+  }
+
+  return summary;
+}
+
+/* ---------- UI atoms ---------- */
+const $K = (v) => `$${(v / 1000).toFixed(1)}K`;
+const pct = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+const sevColor = (s) => s === "high" ? c.bad : c.warn;
+const sevBg = (s) => s === "high" ? c.badBg : c.warnBg;
+
+function Kpi({ label, value, delta, sub, good }) {
+  return (
+    <div className="rounded-xl p-4" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+      <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: c.sub }}>{label}</div>
+      <div className="mt-1.5 flex items-baseline gap-2">
+        <span className="text-2xl font-bold" style={{ color: c.ink, ...num, fontFamily: "'Archivo', sans-serif" }}>{value}</span>
+        {delta != null && (
+          <span className="text-xs font-semibold" style={{ color: good ? c.ok : delta === 0 ? c.sub : c.bad, ...num }}>
+            {delta > 0 ? "+" : ""}{delta.toFixed(1)}%
+          </span>
+        )}
+      </div>
+      {sub && <div className="mt-0.5 text-[11px]" style={{ color: c.sub }}>{sub}</div>}
+    </div>
+  );
+}
+
+function Tab({ label, active, onClick }) {
+  return (
+    <button onClick={onClick} className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+      style={{ background: active ? c.navy : "transparent", color: active ? "#fff" : c.sub, border: `1px solid ${active ? c.navy : c.line}` }}>
+      {label}
+    </button>
+  );
+}
+
+/* ================================================================== *
+ * Main component
+ * ================================================================== */
+function QBRPackGenerator() {
+  const [quarter, setQuarter] = useState("Q4-25");
+  const [view, setView] = useState("dashboard"); // dashboard | watchlist | pack
+  const [selAcct, setSelAcct] = useState(null);
+  const packRef = useRef(null);
+
+  const q = QUARTERS.find((x) => x.key === quarter);
+  const endIdx = q ? q.months[q.months.length - 1] : 0;
+
+  /* ---- portfolio-level aggregates ---- */
+  const portfolio = useMemo(() => {
+    let planRev = 0, actRev = 0, volEff = 0, yieldEff = 0;
+    const acctSummaries = ACCOUNTS.map((acct) => {
+      const qRows = DATA[acct.id].filter((r) => q.months.includes(r.idx));
+      const allRows = DATA[acct.id].filter((r) => r.idx <= endIdx);
+      const pr = qRows.reduce((a, r) => a + r.planRev, 0);
+      const ar = qRows.reduce((a, r) => a + r.actRev, 0);
+      const ve = qRows.reduce((a, r) => a + r.volEffect, 0);
+      const ye = qRows.reduce((a, r) => a + r.yieldEffect, 0);
+      const am = qRows.length ? qRows.reduce((a, r) => a + r.actMargin, 0) / qRows.length : 0;
+      planRev += pr; actRev += ar; volEff += ve; yieldEff += ye;
+      return { ...acct, planRev: pr, actRev: ar, volEff: ve, yieldEff: ye, totalVar: ar - pr, varPct: pr ? ((ar - pr) / pr) * 100 : 0, avgMargin: am, allRows, qRows };
+    });
+    const totalVar = actRev - planRev;
+    const totalVarPct = planRev ? (totalVar / planRev) * 100 : 0;
+    return { planRev, actRev, volEff, yieldEff, totalVar, totalVarPct, acctSummaries };
+  }, [quarter]);
+
+  const watchlist = useMemo(() => buildWatchlist(quarter), [quarter]);
+  const execSummary = useMemo(() => genExecSummary(quarter, watchlist), [quarter, watchlist]);
+
+  /* ---- monthly trend for full portfolio ---- */
+  const trend = useMemo(() =>
+    MONTHS.filter((m) => m.idx <= endIdx).map((m) => {
+      let plan = 0, act = 0;
+      ACCOUNTS.forEach((acct) => { const r = DATA[acct.id][m.idx]; plan += r.planRev; act += r.actRev; });
+      return { month: m.label, plan: +plan.toFixed(1), actual: +act.toFixed(1) };
+    }), [quarter]);
+
+  /* ---- account detail trend ---- */
+  const acctTrend = useMemo(() => {
+    if (!selAcct) return [];
+    return DATA[selAcct].filter((r) => r.idx <= endIdx).map((r) => ({
+      month: r.month, plan: r.planRev, actual: r.actRev, margin: r.actMargin,
+      volEffect: r.volEffect, yieldEffect: r.yieldEffect,
+    }));
+  }, [selAcct, quarter]);
+
+  const sorted = useMemo(() => [...portfolio.acctSummaries].sort((a, b) => a.totalVar - b.totalVar), [portfolio]);
+
+  return (
+    <div style={{ background: c.bg, color: c.ink, fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }} className="min-h-screen w-full">
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+        @media print{.no-print{display:none!important}.print-only{display:block!important}body{background:#fff}}`}</style>
+
+      <div className="mx-auto max-w-6xl px-5 py-8">
+        {/* header */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[.18em]" style={{ color: c.navy }}>
+              Portfolio governance · quarterly business review
+            </div>
+            <h1 className="mt-2 text-3xl font-bold" style={{ fontFamily: "'Archivo', sans-serif" }}>
+              QBR Pack Generator
+            </h1>
+            <p className="mt-1 max-w-2xl text-sm" style={{ color: c.sub }}>
+              Revenue variance decomposition, margin trend analysis, and a generated quarterly business review pack across {ACCOUNTS.length} enterprise accounts.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium" style={{ color: c.sub }}>Quarter:</span>
+            <select value={quarter} onChange={(e) => { setQuarter(e.target.value); setSelAcct(null); }}
+              className="rounded-lg px-3 py-2 text-sm font-semibold outline-none"
+              style={{ border: `1px solid ${c.line}`, color: c.ink, background: c.panel }}>
+              {QUARTERS.map((q) => <option key={q.key} value={q.key}>{q.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* view tabs */}
+        <div className="no-print mt-5 flex flex-wrap gap-2">
+          <Tab label="Dashboard" active={view === "dashboard"} onClick={() => setView("dashboard")} />
+          <Tab label={`Watchlist (${watchlist.length})`} active={view === "watchlist"} onClick={() => setView("watchlist")} />
+          <Tab label="QBR Pack" active={view === "pack"} onClick={() => setView("pack")} />
+        </div>
+
+        {/* ============ DASHBOARD ============ */}
+        {view === "dashboard" && (
+          <div className="mt-5 space-y-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Kpi label="Plan revenue" value={$K(portfolio.planRev)} sub={`${q.label}`} />
+              <Kpi label="Actual revenue" value={$K(portfolio.actRev)} delta={portfolio.totalVarPct} good={portfolio.totalVarPct >= 0} sub="vs plan" />
+              <Kpi label="Volume effect" value={$K(portfolio.volEff)} sub="volume-driven variance" />
+              <Kpi label="Yield effect" value={$K(portfolio.yieldEff)} sub="rate-driven variance" />
+            </div>
+
+            {/* portfolio trend */}
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+              <div className="text-sm font-semibold">Portfolio revenue: plan vs actual</div>
+              <div className="text-xs" style={{ color: c.sub }}>Monthly revenue across all {ACCOUNTS.length} accounts through {q.label}.</div>
+              <div className="mt-4" style={{ height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trend} margin={{ top: 8, right: 8, bottom: 4, left: -8 }}>
+                    <CartesianGrid stroke={c.grid} vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: c.sub }} axisLine={{ stroke: c.line }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                    <Area type="monotone" dataKey="plan" name="Plan" fill={c.navySoft} stroke={c.navy} strokeWidth={1.5} strokeDasharray="4 3" fillOpacity={0.3} />
+                    <Area type="monotone" dataKey="actual" name="Actual" fill={c.tealSoft} stroke={c.teal} strokeWidth={2} fillOpacity={0.4} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* account table */}
+            <div className="overflow-hidden rounded-xl" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+              <div className="px-5 py-4 text-sm font-semibold">Account variance — {q.label}</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ color: c.sub, borderTop: `1px solid ${c.line}`, borderBottom: `1px solid ${c.line}` }}>
+                      <th className="px-5 py-2 text-left text-xs font-semibold">Account</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold">Plan</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold">Actual</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold">Vol. effect</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold">Yield effect</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold">Total var.</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold">Margin</th>
+                      <th className="px-5 py-2 text-right text-xs font-semibold">Check</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((a) => {
+                      const check = Math.abs(a.volEff + a.yieldEff - a.totalVar);
+                      return (
+                        <tr key={a.id} className="cursor-pointer transition-colors hover:bg-gray-50"
+                          onClick={() => setSelAcct(selAcct === a.id ? null : a.id)}
+                          style={{ borderBottom: `1px solid ${c.line}` }}>
+                          <td className="px-5 py-2.5 font-medium">{a.name}</td>
+                          <td className="px-3 py-2.5 text-right" style={{ ...num, color: c.sub }}>{$K(a.planRev)}</td>
+                          <td className="px-3 py-2.5 text-right font-semibold" style={num}>{$K(a.actRev)}</td>
+                          <td className="px-3 py-2.5 text-right" style={{ ...num, color: a.volEff >= 0 ? c.ok : c.bad }}>{$K(a.volEff)}</td>
+                          <td className="px-3 py-2.5 text-right" style={{ ...num, color: a.yieldEff >= 0 ? c.ok : c.bad }}>{$K(a.yieldEff)}</td>
+                          <td className="px-3 py-2.5 text-right font-semibold" style={{ ...num, color: a.totalVar >= 0 ? c.ok : c.bad }}>
+                            {a.totalVar >= 0 ? "+" : ""}{$K(a.totalVar)}
+                          </td>
+                          <td className="px-3 py-2.5 text-right" style={num}>{a.avgMargin.toFixed(1)}%</td>
+                          <td className="px-5 py-2.5 text-right text-xs" style={{ color: check < 0.15 ? c.ok : c.bad, ...num }}>
+                            {check < 0.15 ? "✓" : `Δ${check.toFixed(2)}`}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-5 py-3 text-[11px]" style={{ color: c.sub, borderTop: `1px solid ${c.line}` }}>
+                Check column: vol. effect + yield effect ≡ total variance (rounding tolerance 0.15). Click an account for its trend.
+              </div>
+            </div>
+
+            {/* account detail */}
+            {selAcct && (
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                  <div className="text-sm font-semibold">{ACCOUNTS.find((a) => a.id === selAcct)?.name} — revenue trend</div>
+                  <div style={{ height: 220 }} className="mt-3">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={acctTrend} margin={{ top: 8, right: 8, bottom: 4, left: -12 }}>
+                        <CartesianGrid stroke={c.grid} vertical={false} />
+                        <XAxis dataKey="month" tick={{ fontSize: 10, fill: c.sub }} tickLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                        <Bar dataKey="plan" name="Plan" fill={c.neutral} radius={[2, 2, 0, 0]} />
+                        <Line type="monotone" dataKey="actual" name="Actual" stroke={c.teal} strokeWidth={2.5} dot={{ r: 2.5 }} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                  <div className="text-sm font-semibold">{ACCOUNTS.find((a) => a.id === selAcct)?.name} — margin trend</div>
+                  <div style={{ height: 220 }} className="mt-3">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={acctTrend} margin={{ top: 8, right: 8, bottom: 4, left: -12 }}>
+                        <CartesianGrid stroke={c.grid} vertical={false} />
+                        <XAxis dataKey="month" tick={{ fontSize: 10, fill: c.sub }} tickLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} unit="%" />
+                        <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                        <Area type="monotone" dataKey="margin" name="Margin %" fill={c.navySoft} stroke={c.navy} strokeWidth={2} fillOpacity={0.3} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ============ WATCHLIST ============ */}
+        {view === "watchlist" && (
+          <div className="mt-5 space-y-4">
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}`, borderLeft: `3px solid ${c.navy}` }}>
+              <div className="text-sm font-semibold">Methodology</div>
+              <div className="mt-2 space-y-1.5 text-[13px]" style={{ color: c.sub }}>
+                <p><strong style={{ color: c.ink }}>Margin erosion:</strong> trailing-6-month OLS regression on monthly margin %. Flagged when slope ≤ −18 bps/month <em>and</em> R² ≥ 0.45. A slope test without a fit threshold flags noise; a level test misses gradual leakage.</p>
+                <p><strong style={{ color: c.ink }}>Volume displacement:</strong> trailing-3-month average volume gap vs plan. Flagged when ≤ −10%. Distinguished from one-time lane loss by pattern persistence.</p>
+                <p><strong style={{ color: c.ink }}>Margin step-down:</strong> quarter-over-quarter average margin drop ≥ 1.5 ppt, consistent with a renewal rate concession.</p>
+                <p><strong style={{ color: c.ink }}>Variance decomposition:</strong> volume effect = (actual vol − plan vol) × plan yield; yield effect = (actual yield − plan yield) × actual vol. Sum ≡ total variance (verified programmatically, shown as ✓ in Dashboard).</p>
+              </div>
+            </div>
+
+            {watchlist.length === 0 && (
+              <div className="rounded-xl p-8 text-center" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                <div className="text-sm font-semibold" style={{ color: c.ok }}>No accounts flagged for {q.label}.</div>
+                <div className="mt-1 text-xs" style={{ color: c.sub }}>All accounts within tolerance.</div>
+              </div>
+            )}
+
+            {watchlist.map((w) => (
+              <div key={w.acct.id} className="overflow-hidden rounded-xl" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4" style={{ borderBottom: `1px solid ${c.line}` }}>
+                  <div>
+                    <div className="font-semibold">{w.acct.name}</div>
+                    <div className="text-xs" style={{ color: c.sub }}>
+                      Rev. variance: {pct(w.qRevVarPct)} · Vol: {$K(w.qVolEff)} · Yield: {$K(w.qYieldEff)}
+                      {w.marginSlope !== 0 && <> · Margin slope: {w.marginSlope.toFixed(0)} bps/mo (R²={w.marginR2.toFixed(2)})</>}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {w.flags.map((f, i) => (
+                      <span key={i} className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                        style={{ color: sevColor(f.severity), background: sevBg(f.severity) }}>
+                        {f.flag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {w.flags.map((f, i) => (
+                  <div key={i} className="px-5 py-3" style={{ borderBottom: i < w.flags.length - 1 ? `1px solid ${c.line}` : "none" }}>
+                    <div className="text-sm" style={{ color: c.ink }}>{f.detail}</div>
+                    <div className="mt-2 rounded-lg px-3 py-2 text-sm font-medium"
+                      style={{ background: sevBg(f.severity), color: sevColor(f.severity) }}>
+                      Action: {f.action}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ============ QBR PACK ============ */}
+        {view === "pack" && (
+          <div className="mt-5">
+            <div className="no-print mb-3 flex justify-end">
+              <button onClick={() => window.print()}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
+                style={{ background: c.navy }}>
+                Print / Save as PDF
+              </button>
+            </div>
+
+            <div ref={packRef} className="space-y-5">
+              {/* cover */}
+              <div className="rounded-xl p-8" style={{ background: c.navy, color: "#fff" }}>
+                <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", opacity: 0.6, fontFamily: "'IBM Plex Mono', monospace" }}>
+                  Quarterly business review
+                </div>
+                <h2 className="mt-3 text-3xl font-bold" style={{ fontFamily: "'Archivo', sans-serif" }}>{q.label} Portfolio Review</h2>
+                <div className="mt-2 text-sm" style={{ opacity: 0.65 }}>{ACCOUNTS.length} enterprise accounts · revenue variance &amp; margin analysis</div>
+              </div>
+
+              {/* exec summary */}
+              <div className="rounded-xl p-6" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                <div className="mb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: c.navy }}>Executive summary</div>
+                <p className="text-[15px] leading-relaxed" style={{ color: c.ink }}>{execSummary}</p>
+              </div>
+
+              {/* pack KPIs */}
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <Kpi label="Total plan" value={$K(portfolio.planRev)} />
+                <Kpi label="Total actual" value={$K(portfolio.actRev)} delta={portfolio.totalVarPct} good={portfolio.totalVarPct >= 0} />
+                <Kpi label="Volume effect" value={$K(portfolio.volEff)} />
+                <Kpi label="Yield effect" value={$K(portfolio.yieldEff)} />
+              </div>
+
+              {/* variance chart */}
+              <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                <div className="mb-1 text-sm font-semibold">Revenue variance by account — {q.label}</div>
+                <div className="text-xs" style={{ color: c.sub }}>Sorted worst to best. Each bar decomposes into volume and yield effects.</div>
+                <div className="mt-4" style={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={sorted} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 110 }}>
+                      <CartesianGrid stroke={c.grid} horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: c.ink }} axisLine={false} tickLine={false} width={106} />
+                      <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar dataKey="volEff" name="Volume effect" stackId="a" fill={c.bar2} />
+                      <Bar dataKey="yieldEff" name="Yield effect" stackId="a" fill={c.bar3} />
+                      <ReferenceLine x={0} stroke={c.ink} strokeWidth={1} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* watchlist summary */}
+              {watchlist.length > 0 && (
+                <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                  <div className="mb-3 text-sm font-semibold">Watchlist — {q.label}</div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ color: c.sub, borderBottom: `1px solid ${c.line}` }}>
+                          <th className="px-4 py-2 text-left text-xs font-semibold">Account</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold">Flag</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold">Severity</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold">Recommended action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {watchlist.flatMap((w) => w.flags.map((f, i) => (
+                          <tr key={w.acct.id + i} style={{ borderBottom: `1px solid ${c.line}` }}>
+                            <td className="px-4 py-2 font-medium">{i === 0 ? w.acct.name : ""}</td>
+                            <td className="px-3 py-2">{f.flag}</td>
+                            <td className="px-3 py-2">
+                              <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                                style={{ color: sevColor(f.severity), background: sevBg(f.severity) }}>
+                                {f.severity}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-[13px]" style={{ color: c.sub }}>{f.action}</td>
+                          </tr>
+                        )))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <div className="text-center text-[11px]" style={{ color: c.sub }}>
+                Generated from synthetic portfolio data · no client information published · variance decomposition verified programmatically
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(mulberry32));
+<\/script>
+</body>
+</html>

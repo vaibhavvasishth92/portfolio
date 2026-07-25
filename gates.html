@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Implementation Gate Tracker — Vaibhav Vasishth</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"><\/script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"><\/script>
+<script src="https://cdn.tailwindcss.com"><\/script>
+<style>body{margin:0;padding:0}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+const { ResponsiveContainer, ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, ScatterChart, Scatter, ZAxis,  } = Recharts;
+
+import {
+  ResponsiveContainer, ComposedChart, BarChart, Bar, Line, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend, Cell, ScatterChart, Scatter, ZAxis,
+} from "recharts";
+
+/* ================================================================== *
+ * Implementation Gate Tracker
+ *
+ * 14 concurrent customer implementations tracked through a 4-gate
+ * phase-gated framework (Kickoff → Requirements → Configuration → Go-Live).
+ * Each gate has defined entry/exit criteria, planned vs actual dates,
+ * schedule variance in days, and a derived health status.
+ *
+ * Demonstrates: phase-gate methodology, schedule variance (SV),
+ * milestone burn-down, critical path identification, slippage
+ * detection, and portfolio-level governance.
+ *
+ * Synthetic data modelled on transportation/logistics onboarding.
+ * ================================================================== */
+
+const c = {
+  bg: "#F0F2F5", panel: "#FFFFFF", ink: "#111D2B", sub: "#5B6A7D",
+  line: "#DCE1E8", grid: "#E8ECF0",
+  navy: "#1A3E6F", navySoft: "#E5EBF3",
+  gold: "#D4A843", goldSoft: "#F5EDD8",
+  ok: "#15803D", okBg: "#E3F2E8",
+  warn: "#B45309", warnBg: "#FBEEDA",
+  bad: "#B91C1C", badBg: "#F8E5E4",
+  blue: "#2563EB", blueSoft: "#DBEAFE",
+  neutral: "#BCC7D3",
+};
+const num = { fontVariantNumeric: "tabular-nums" };
+
+/* ---------- deterministic RNG ---------- */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(20260725);
+
+/* ---------- gate definitions ---------- */
+const GATES = [
+  {
+    id: "G1", name: "Kickoff", phase: "Initiation",
+    criteria: [
+      "Signed contract on file",
+      "Account team identified",
+      "Stakeholder register completed",
+      "Kick-off meeting held with customer",
+    ],
+  },
+  {
+    id: "G2", name: "Requirements", phase: "Planning",
+    criteria: [
+      "Service requirements documented",
+      "Operational scope confirmed (lanes, volumes, SLAs)",
+      "System access provisioned",
+      "Implementation plan approved by customer",
+    ],
+  },
+  {
+    id: "G3", name: "Configuration", phase: "Execution",
+    criteria: [
+      "Routing and rate tables configured",
+      "EDI/integration testing passed",
+      "SOPs documented and reviewed",
+      "Dry-run shipment completed successfully",
+    ],
+  },
+  {
+    id: "G4", name: "Go-Live", phase: "Closeout",
+    criteria: [
+      "Customer sign-off on readiness",
+      "Live shipments executing to SLA",
+      "Post-go-live support plan in place",
+      "Lessons learned documented",
+    ],
+  },
+];
+
+/* ---------- project data ---------- */
+const SEGMENTS = ["Enterprise", "Mid-market"];
+const SERVICES = ["Dry van", "Reefer", "LTL", "Intermodal"];
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function diffDays(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+function fmtDate(d) {
+  if (!d) return "—";
+  const dt = new Date(d + "T00:00:00");
+  return dt.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "2-digit" });
+}
+
+function generateProjects() {
+  const names = [
+    "Apex Consumer Products", "BlueWave Distribution", "Cascade Retail Group",
+    "DeltaPack Industries", "Evergreen Food Services", "FrostLine Cold Chain",
+    "Granite Building Supply", "Highland Automotive", "IronBridge Manufacturing",
+    "Keystone Pharma Logistics", "Lakeview Ag Co-op", "Meridian Electronics",
+    "NorthStar Beverages", "OakPoint Paper & Packaging",
+  ];
+  const stories = [
+    "on-track", "on-track", "minor-slip", "on-track", "major-slip",
+    "on-track", "blocked", "on-track", "minor-slip", "on-track",
+    "on-track", "minor-slip", "on-track", "completed",
+  ];
+
+  const projects = names.map((name, i) => {
+    const segment = i < 8 ? "Enterprise" : "Mid-market";
+    const service = SERVICES[i % SERVICES.length];
+    const story = stories[i];
+    const complexity = segment === "Enterprise" ? "High" : "Medium";
+
+    // Stagger start dates between Jan 2025 and Oct 2025
+    const startOffset = Math.floor(i * 18 + rand() * 14);
+    const baseStart = addDays("2025-01-06", startOffset);
+
+    // Planned durations per gate (days)
+    const baseDur = complexity === "High" ? [10, 18, 22, 8] : [7, 12, 16, 6];
+    const planned = [];
+    let cursor = baseStart;
+    for (let g = 0; g < 4; g++) {
+      const dur = baseDur[g] + Math.floor(rand() * 5);
+      const start = cursor;
+      const end = addDays(start, dur);
+      planned.push({ start, end, dur });
+      cursor = addDays(end, 1);
+    }
+
+    // Actual dates with story-driven variance
+    const actual = [];
+    let aCursor = baseStart;
+    const today = "2026-07-25";
+
+    for (let g = 0; g < 4; g++) {
+      let slip = 0;
+      if (story === "minor-slip") {
+        slip = g >= 1 ? Math.floor(3 + rand() * 6) : 0;
+      } else if (story === "major-slip") {
+        slip = g >= 1 ? Math.floor(8 + rand() * 12) : Math.floor(rand() * 3);
+      } else if (story === "blocked" && g >= 2) {
+        // Blocked at G3 — no actual dates for G3 and G4
+        actual.push({ start: aCursor, end: null, dur: null, status: "blocked" });
+        actual.push({ start: null, end: null, dur: null, status: "not-started" });
+        break;
+      } else if (story === "on-track" || story === "completed") {
+        slip = Math.floor(rand() * 3) - 1; // -1 to +1
+      }
+
+      const aStart = aCursor;
+      const aDur = planned[g].dur + slip;
+      const aEnd = addDays(aStart, aDur);
+
+      // Check if this gate is in the future
+      if (story !== "completed" && aEnd > today && g >= 2) {
+        if (aStart > today) {
+          actual.push({ start: null, end: null, dur: null, status: "not-started" });
+        } else {
+          actual.push({ start: aStart, end: null, dur: null, status: "in-progress" });
+        }
+        for (let r = g + 1; r < 4; r++) {
+          actual.push({ start: null, end: null, dur: null, status: "not-started" });
+        }
+        break;
+      }
+
+      actual.push({ start: aStart, end: aEnd, dur: aDur, status: "completed" });
+      aCursor = addDays(aEnd, 1);
+    }
+
+    // Pad actual array to 4 gates if needed
+    while (actual.length < 4) {
+      actual.push({ start: null, end: null, dur: null, status: "not-started" });
+    }
+
+    // Calculate gate-level schedule variance
+    const gates = GATES.map((gate, g) => {
+      const p = planned[g];
+      const a = actual[g];
+      let sv = null; // schedule variance in days
+      let health = "not-started";
+
+      if (a.status === "completed") {
+        sv = diffDays(p.end, a.end); // positive = late
+        health = sv <= 0 ? "on-track" : sv <= 5 ? "watch" : "at-risk";
+      } else if (a.status === "in-progress") {
+        // estimate: days elapsed vs planned duration
+        const elapsed = diffDays(a.start, today);
+        sv = elapsed - p.dur;
+        health = sv <= 2 ? "in-progress" : sv <= 7 ? "watch" : "at-risk";
+      } else if (a.status === "blocked") {
+        health = "blocked";
+        sv = diffDays(p.end, today);
+      }
+
+      // Criteria completion
+      let critMet = 0;
+      if (a.status === "completed") critMet = gate.criteria.length;
+      else if (a.status === "in-progress") critMet = Math.min(gate.criteria.length - 1, Math.floor(rand() * gate.criteria.length));
+      else if (a.status === "blocked") critMet = Math.floor(gate.criteria.length * 0.5);
+
+      return {
+        ...gate, planned: p, actual: a, sv, health, critMet,
+        critTotal: gate.criteria.length,
+      };
+    });
+
+    // Overall project status
+    const completedGates = gates.filter((g) => g.actual.status === "completed").length;
+    const blocked = gates.some((g) => g.health === "blocked");
+    const atRisk = gates.some((g) => g.health === "at-risk");
+    const totalSV = gates.reduce((a, g) => a + (g.sv || 0), 0);
+    let status = "on-track";
+    if (blocked) status = "blocked";
+    else if (story === "completed" || completedGates === 4) status = "completed";
+    else if (atRisk || totalSV > 10) status = "at-risk";
+    else if (totalSV > 3) status = "watch";
+    else status = "on-track";
+
+    const plannedEnd = planned[3].end;
+    const actualEnd = actual[3]?.end || null;
+    const currentGate = gates.findIndex((g) => g.actual.status !== "completed");
+
+    return {
+      id: i, name, segment, service, complexity, story,
+      gates, status, completedGates,
+      plannedStart: planned[0].start, plannedEnd,
+      actualEnd, totalSV, currentGate: currentGate === -1 ? 4 : currentGate,
+    };
+  });
+  return projects;
+}
+
+const PROJECTS = generateProjects();
+
+/* ---------- UI atoms ---------- */
+const statusColor = (s) =>
+  s === "completed" ? c.blue : s === "on-track" || s === "in-progress" ? c.ok : s === "watch" ? c.warn : s === "blocked" ? c.bad : s === "at-risk" ? c.bad : c.sub;
+const statusBg = (s) =>
+  s === "completed" ? c.blueSoft : s === "on-track" || s === "in-progress" ? c.okBg : s === "watch" ? c.warnBg : c.badBg;
+
+function Chip({ status }) {
+  const label = status.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+      style={{ color: statusColor(status), background: statusBg(status) }}>
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: statusColor(status) }} />
+      {label}
+    </span>
+  );
+}
+
+function Kpi({ label, value, sub, color }) {
+  return (
+    <div className="rounded-xl p-4" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+      <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: c.sub }}>{label}</div>
+      <div className="mt-1.5 text-2xl font-bold" style={{ color: color || c.ink, ...num, fontFamily: "'Archivo', sans-serif" }}>{value}</div>
+      {sub && <div className="mt-0.5 text-[11px]" style={{ color: c.sub }}>{sub}</div>}
+    </div>
+  );
+}
+
+/* ---------- gate progress bar ---------- */
+function GateBar({ project }) {
+  return (
+    <div className="flex items-center gap-1">
+      {project.gates.map((g, i) => {
+        const w = 25; // 4 gates = 25% each
+        let bg = c.line;
+        if (g.actual.status === "completed") bg = statusColor(g.health === "on-track" ? "on-track" : g.health === "watch" ? "watch" : "at-risk");
+        else if (g.actual.status === "in-progress") bg = `repeating-linear-gradient(90deg, ${statusColor(g.health)} 0, ${statusColor(g.health)} 6px, transparent 6px, transparent 10px)`;
+        else if (g.actual.status === "blocked") bg = c.bad;
+
+        return (
+          <div key={i} className="relative h-2 rounded-full" style={{ width: `${w}%`, background: g.actual.status === "in-progress" ? undefined : bg }}>
+            {g.actual.status === "in-progress" && (
+              <div className="h-full rounded-full" style={{ width: "60%", background: statusColor(g.health) }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ================================================================== */
+function ImplementationGateTracker() {
+  const [view, setView] = useState("portfolio"); // portfolio | burndown | detail
+  const [selProj, setSelProj] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  const filtered = useMemo(() => {
+    if (filterStatus === "all") return PROJECTS;
+    return PROJECTS.filter((p) => p.status === filterStatus);
+  }, [filterStatus]);
+
+  /* portfolio-level stats */
+  const stats = useMemo(() => {
+    const total = PROJECTS.length;
+    const completed = PROJECTS.filter((p) => p.status === "completed").length;
+    const onTrack = PROJECTS.filter((p) => p.status === "on-track").length;
+    const atRisk = PROJECTS.filter((p) => p.status === "at-risk" || p.status === "blocked").length;
+    const watch = PROJECTS.filter((p) => p.status === "watch").length;
+    const avgSV = Math.round(PROJECTS.reduce((a, p) => a + p.totalSV, 0) / total);
+    const gatesCompleted = PROJECTS.reduce((a, p) => a + p.completedGates, 0);
+    const gatesTotal = total * 4;
+    return { total, completed, onTrack, atRisk, watch, avgSV, gatesCompleted, gatesTotal };
+  }, []);
+
+  /* burn-down data: cumulative gates completed over time */
+  const burnDown = useMemo(() => {
+    const events = [];
+    PROJECTS.forEach((p) => {
+      p.gates.forEach((g) => {
+        if (g.actual.status === "completed" && g.actual.end) {
+          events.push({ date: g.actual.end });
+        }
+      });
+    });
+    events.sort((a, b) => a.date.localeCompare(b.date));
+
+    const totalGates = PROJECTS.length * 4;
+    const points = [];
+    let remaining = totalGates;
+    let cumDone = 0;
+
+    // planned burn-down (linear baseline)
+    const allPlanned = [];
+    PROJECTS.forEach((p) => p.gates.forEach((g) => allPlanned.push(g.planned.end)));
+    allPlanned.sort();
+
+    const planPoints = [];
+    let planRemaining = totalGates;
+    const planCounts = {};
+    allPlanned.forEach((d) => { planCounts[d] = (planCounts[d] || 0) + 1; });
+    Object.keys(planCounts).sort().forEach((d) => {
+      planRemaining -= planCounts[d];
+      planPoints.push({ date: d, planned: planRemaining });
+    });
+
+    // actual burn-down
+    const actCounts = {};
+    events.forEach((e) => { actCounts[e.date] = (actCounts[e.date] || 0) + 1; });
+    Object.keys(actCounts).sort().forEach((d) => {
+      remaining -= actCounts[d];
+      points.push({ date: d, actual: remaining });
+    });
+
+    // merge
+    const allDates = new Set([...planPoints.map((p) => p.date), ...points.map((p) => p.date)]);
+    const sorted = [...allDates].sort();
+    let lastPlan = totalGates, lastAct = totalGates;
+    const merged = sorted.map((d) => {
+      const pp = planPoints.find((p) => p.date === d);
+      const ap = points.find((p) => p.date === d);
+      if (pp) lastPlan = pp.planned;
+      if (ap) lastAct = ap.actual;
+      return { date: fmtDate(d), planned: lastPlan, actual: lastAct };
+    });
+
+    return merged;
+  }, []);
+
+  /* schedule variance scatter */
+  const svData = useMemo(() =>
+    PROJECTS.filter((p) => p.status !== "completed").map((p) => ({
+      name: p.name, x: p.currentGate, y: p.totalSV, status: p.status,
+    })), []);
+
+  const selected = selProj !== null ? PROJECTS.find((p) => p.id === selProj) : null;
+
+  return (
+    <div style={{ background: c.bg, color: c.ink, fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }} className="min-h-screen w-full">
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');`}</style>
+
+      <div className="mx-auto max-w-6xl px-5 py-8">
+        {/* header */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[.18em]" style={{ color: c.navy }}>
+              Project management · phase-gate governance
+            </div>
+            <h1 className="mt-2 text-3xl font-bold" style={{ fontFamily: "'Archivo', sans-serif" }}>
+              Implementation Gate Tracker
+            </h1>
+            <p className="mt-1 max-w-2xl text-sm" style={{ color: c.sub }}>
+              {PROJECTS.length} concurrent customer implementations tracked through a four-gate framework — Kickoff, Requirements, Configuration, Go-Live — with schedule variance, gate criteria, and milestone burn-down.
+            </p>
+          </div>
+        </div>
+
+        {/* view tabs */}
+        <div className="mt-5 flex flex-wrap gap-2">
+          {[["portfolio", "Portfolio"], ["burndown", "Burn-down"], ["detail", "Gate detail"]].map(([k, l]) => (
+            <button key={k} onClick={() => setView(k)}
+              className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+              style={{ background: view === k ? c.navy : "transparent", color: view === k ? "#fff" : c.sub, border: `1px solid ${view === k ? c.navy : c.line}` }}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {/* KPIs */}
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+          <Kpi label="Active projects" value={stats.total} sub={`${stats.completed} completed`} />
+          <Kpi label="On track" value={stats.onTrack} color={c.ok} sub="within tolerance" />
+          <Kpi label="At risk / blocked" value={stats.atRisk} color={c.bad} sub="need intervention" />
+          <Kpi label="Gates completed" value={`${stats.gatesCompleted}/${stats.gatesTotal}`} sub={`${Math.round((stats.gatesCompleted / stats.gatesTotal) * 100)}% through`} />
+          <Kpi label="Avg. schedule variance" value={`${stats.avgSV > 0 ? "+" : ""}${stats.avgSV}d`} color={stats.avgSV > 3 ? c.bad : stats.avgSV > 0 ? c.warn : c.ok} sub="days vs plan" />
+        </div>
+
+        {/* ============ PORTFOLIO VIEW ============ */}
+        {view === "portfolio" && (
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium" style={{ color: c.sub }}>Filter:</span>
+              {[["all", "All"], ["on-track", "On track"], ["watch", "Watch"], ["at-risk", "At risk"], ["blocked", "Blocked"], ["completed", "Completed"]].map(([k, l]) => (
+                <button key={k} onClick={() => setFilterStatus(k)}
+                  className="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+                  style={{ background: filterStatus === k ? c.navy : c.panel, color: filterStatus === k ? "#fff" : c.sub, border: `1px solid ${filterStatus === k ? c.navy : c.line}` }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            <div className="overflow-hidden rounded-xl" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ color: c.sub, borderBottom: `1px solid ${c.line}` }}>
+                      <th className="px-5 py-2.5 text-left text-xs font-semibold">Implementation</th>
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold">Segment</th>
+                      <th className="px-3 py-2.5 text-center text-xs font-semibold">Gate progress</th>
+                      <th className="px-3 py-2.5 text-right text-xs font-semibold">SV (days)</th>
+                      <th className="px-3 py-2.5 text-right text-xs font-semibold">Planned end</th>
+                      <th className="px-5 py-2.5 text-right text-xs font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((p) => (
+                      <tr key={p.id} className="cursor-pointer transition-colors hover:bg-gray-50"
+                        onClick={() => { setSelProj(p.id); setView("detail"); }}
+                        style={{ borderBottom: `1px solid ${c.line}` }}>
+                        <td className="px-5 py-3">
+                          <div className="font-semibold">{p.name}</div>
+                          <div className="text-xs" style={{ color: c.sub }}>{p.service} · {p.complexity}</div>
+                        </td>
+                        <td className="px-3 py-3 text-xs">{p.segment}</td>
+                        <td className="px-3 py-3" style={{ minWidth: 120 }}>
+                          <GateBar project={p} />
+                          <div className="mt-1 text-center text-[10px]" style={{ color: c.sub }}>{p.completedGates}/4 gates</div>
+                        </td>
+                        <td className="px-3 py-3 text-right font-semibold" style={{ ...num, color: p.totalSV > 5 ? c.bad : p.totalSV > 0 ? c.warn : c.ok }}>
+                          {p.totalSV > 0 ? "+" : ""}{p.totalSV}d
+                        </td>
+                        <td className="px-3 py-3 text-right text-xs" style={{ ...num, color: c.sub }}>{fmtDate(p.plannedEnd)}</td>
+                        <td className="px-5 py-3 text-right"><Chip status={p.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* SV scatter */}
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+              <div className="text-sm font-semibold">Schedule variance vs. progress</div>
+              <div className="text-xs" style={{ color: c.sub }}>Active projects plotted by current gate (x) and cumulative schedule variance in days (y). Top-left quadrant = early stage with high slippage.</div>
+              <div className="mt-4" style={{ height: 240 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 0 }}>
+                    <CartesianGrid stroke={c.grid} strokeDasharray="3 3" />
+                    <XAxis type="number" dataKey="x" domain={[0, 4]} ticks={[0, 1, 2, 3, 4]} tick={{ fontSize: 11, fill: c.sub }}
+                      tickFormatter={(v) => ["Start", "G1", "G2", "G3", "G4"][v] || v}
+                      label={{ value: "Current gate", position: "insideBottom", offset: -8, fontSize: 11, fill: c.sub }} />
+                    <YAxis type="number" dataKey="y" tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false}
+                      label={{ value: "Schedule variance (days)", angle: -90, position: "insideLeft", fontSize: 11, fill: c.sub }} />
+                    <ZAxis range={[80, 180]} />
+                    <Tooltip cursor={{ strokeDasharray: "3 3" }}
+                      content={({ payload }) => {
+                        if (!payload || !payload.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div className="rounded-lg px-3 py-2 text-xs shadow" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                            <div className="font-semibold">{d.name}</div>
+                            <div style={{ color: c.sub }}>Gate {d.x} · SV {d.y > 0 ? "+" : ""}{d.y}d</div>
+                          </div>
+                        );
+                      }} />
+                    <Scatter data={svData}>
+                      {svData.map((d, i) => <Cell key={i} fill={statusColor(d.status)} fillOpacity={0.85} />)}
+                    </Scatter>
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============ BURN-DOWN VIEW ============ */}
+        {view === "burndown" && (
+          <div className="mt-4 space-y-3">
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+              <div className="text-sm font-semibold">Milestone burn-down</div>
+              <div className="text-xs" style={{ color: c.sub }}>
+                Remaining gate milestones over time. The planned baseline (dashed) vs actual completion. Gap = portfolio-level schedule slippage.
+              </div>
+              <div className="mt-4" style={{ height: 320 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={burnDown} margin={{ top: 8, right: 8, bottom: 24, left: -8 }}>
+                    <CartesianGrid stroke={c.grid} vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: c.sub }} tickLine={false} interval={Math.max(1, Math.floor(burnDown.length / 12))}
+                      angle={-30} textAnchor="end" height={48} />
+                    <YAxis tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false}
+                      label={{ value: "Gates remaining", angle: -90, position: "insideLeft", fontSize: 11, fill: c.sub }} />
+                    <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Line type="stepAfter" dataKey="planned" name="Planned baseline" stroke={c.neutral} strokeWidth={2} strokeDasharray="6 4" dot={false} />
+                    <Line type="stepAfter" dataKey="actual" name="Actual" stroke={c.navy} strokeWidth={2.5} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}`, borderLeft: `3px solid ${c.navy}` }}>
+              <div className="text-sm font-semibold">Reading the chart</div>
+              <div className="mt-2 text-sm" style={{ color: c.sub }}>
+                The dashed line is the planned baseline — where the portfolio would be if every gate closed on its planned date. The solid line is actual. When the actual line runs above the planned line, the portfolio is behind schedule — more gates remain open than planned. The vertical gap at any point is the number of gates that have slipped. A steepening gap means slippage is accelerating; a narrowing gap means the team is recovering.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============ GATE DETAIL VIEW ============ */}
+        {view === "detail" && (
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-xs font-medium" style={{ color: c.sub }}>Select project:</span>
+              <select value={selProj ?? ""} onChange={(e) => setSelProj(Number(e.target.value))}
+                className="rounded-lg px-3 py-2 text-sm outline-none"
+                style={{ border: `1px solid ${c.line}`, color: c.ink, background: c.panel }}>
+                {PROJECTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+
+            {selected && (
+              <>
+                <div className="flex flex-wrap items-center gap-4 rounded-xl px-5 py-4" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                  <div>
+                    <div className="text-lg font-bold" style={{ fontFamily: "'Archivo', sans-serif" }}>{selected.name}</div>
+                    <div className="text-xs" style={{ color: c.sub }}>{selected.segment} · {selected.service} · {selected.complexity} complexity</div>
+                  </div>
+                  <div className="ml-auto flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="text-xs" style={{ color: c.sub }}>Schedule variance</div>
+                      <div className="text-lg font-bold" style={{ ...num, color: selected.totalSV > 5 ? c.bad : selected.totalSV > 0 ? c.warn : c.ok }}>
+                        {selected.totalSV > 0 ? "+" : ""}{selected.totalSV} days
+                      </div>
+                    </div>
+                    <Chip status={selected.status} />
+                  </div>
+                </div>
+
+                {/* Gate cards */}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {selected.gates.map((g, i) => (
+                    <div key={i} className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}`, borderLeft: `3px solid ${statusColor(g.health)}` }}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.sub }}>{g.phase}</div>
+                          <div className="mt-1 text-base font-semibold">{g.id}: {g.name}</div>
+                        </div>
+                        <Chip status={g.health} />
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <div style={{ color: c.sub }}>Planned</div>
+                          <div className="font-medium" style={num}>{fmtDate(g.planned.start)} → {fmtDate(g.planned.end)}</div>
+                          <div style={{ color: c.sub, ...num }}>{g.planned.dur} days</div>
+                        </div>
+                        <div>
+                          <div style={{ color: c.sub }}>Actual</div>
+                          <div className="font-medium" style={num}>
+                            {g.actual.start ? fmtDate(g.actual.start) : "—"} → {g.actual.end ? fmtDate(g.actual.end) : g.actual.status === "in-progress" ? "in progress" : "—"}
+                          </div>
+                          {g.sv !== null && (
+                            <div className="font-semibold" style={{ ...num, color: statusColor(g.health) }}>
+                              SV: {g.sv > 0 ? "+" : ""}{g.sv} days
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Criteria checklist */}
+                      <div className="mt-4">
+                        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: c.sub }}>
+                          Exit criteria ({g.critMet}/{g.critTotal})
+                        </div>
+                        <div className="space-y-1.5">
+                          {g.criteria.map((cr, j) => {
+                            const met = j < g.critMet;
+                            return (
+                              <div key={j} className="flex items-start gap-2 text-xs">
+                                <span className="mt-0.5 flex-shrink-0 text-sm">{met ? "✓" : "○"}</span>
+                                <span style={{ color: met ? c.ink : c.sub, textDecoration: met ? "none" : "none" }}>{cr}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Findings */}
+                <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}`, borderLeft: `3px solid ${c.navy}` }}>
+                  <div className="text-sm font-semibold">Assessment</div>
+                  <div className="mt-2 text-sm" style={{ color: c.ink }}>
+                    {selected.status === "completed" &&
+                      `All four gates closed. Total schedule variance: ${selected.totalSV > 0 ? "+" : ""}${selected.totalSV} days against plan. ${selected.totalSV <= 0 ? "Delivered on or ahead of schedule." : selected.totalSV <= 5 ? "Minor slippage within acceptable tolerance." : "Slippage exceeded tolerance — lessons learned should be documented."}`}
+                    {selected.status === "on-track" &&
+                      `Currently at Gate ${selected.currentGate + 1} (${GATES[selected.currentGate]?.name}). Cumulative SV: ${selected.totalSV > 0 ? "+" : ""}${selected.totalSV} days. All completed gates within tolerance — no intervention required.`}
+                    {selected.status === "watch" &&
+                      `Currently at Gate ${selected.currentGate + 1} (${GATES[selected.currentGate]?.name}). Cumulative SV: +${selected.totalSV} days. Slippage is accumulating — review the ${GATES[Math.max(0, selected.currentGate - 1)]?.name} gate exit criteria for incomplete items before proceeding.`}
+                    {selected.status === "at-risk" &&
+                      `Currently at Gate ${selected.currentGate + 1} (${GATES[selected.currentGate]?.name}). Cumulative SV: +${selected.totalSV} days. Schedule recovery is unlikely without intervention. Recommend: escalate to account sponsor, reassess scope or resource allocation, and hold a gate review before advancing.`}
+                    {selected.status === "blocked" &&
+                      `Blocked at Gate ${selected.currentGate + 1} (${GATES[selected.currentGate]?.name}). Exit criteria incomplete — cannot advance. Immediate action: identify the blocking dependency, assign an owner, and set a resolution deadline. Escalate to the implementation steering committee if not resolved within 5 business days.`}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="mt-5 text-center text-[11px]" style={{ color: c.sub }}>
+          Synthetic dataset modelled on transportation/logistics customer onboarding · four-gate phase framework · no client data used
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(mulberry32));
+<\/script>
+</body>
+</html>

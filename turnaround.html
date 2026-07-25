@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delivery Turnaround Analyzer — Vaibhav Vasishth</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"><\/script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"><\/script>
+<script src="https://cdn.tailwindcss.com"><\/script>
+<style>body{margin:0;padding:0}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+const { ResponsiveContainer, ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, ReferenceLine,  } = Recharts;
+
+import {
+  ResponsiveContainer, ComposedChart, BarChart, Bar, Line, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend, Cell, ReferenceLine,
+} from "recharts";
+
+/* ------------------------------------------------------------------ *
+ * Delivery Turnaround Analyzer
+ * Order-to-invoice cycle time decomposition across a 115+ truck network.
+ * Synthetic dataset (720 shipments, 6 months) generated deterministically
+ * so the analysis is reproducible.
+ * ------------------------------------------------------------------ */
+
+const c = {
+  bg: "#F1F3F5", panel: "#FFFFFF", ink: "#14202E", sub: "#5C6B7E",
+  line: "#DDE3E9", grid: "#E8EDF1",
+  accent: "#1D4E89", accentSoft: "#E4EBF4",
+  ok: "#15803D", warn: "#B45309", bad: "#B91C1C",
+  bar1: "#1D4E89", bar2: "#4A7FB5", bar3: "#8FB3D4", neutral: "#B8C4D0",
+};
+const num = { fontVariantNumeric: "tabular-nums" };
+
+/* ---------------- deterministic RNG ---------------- */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(20250716);
+// right-skewed draw: real cycle times have a long tail
+const skew = (mean, spread) => {
+  const u = Math.max(1e-6, rand());
+  return Math.max(0.4, mean * Math.exp(spread * (Math.log(-Math.log(u)) * 0.55)));
+};
+
+/* ---------------- process model ---------------- */
+const STAGES = [
+  { key: "intake",   label: "Order intake",            cause: "EDI / order entry error" },
+  { key: "docs",     label: "Documentation & credit",  cause: "Missing or incorrect paperwork" },
+  { key: "planning", label: "Load planning",           cause: "Load planning rework" },
+  { key: "carrier",  label: "Carrier assignment",      cause: "Carrier capacity shortfall" },
+  { key: "pickup",   label: "Pickup dwell",            cause: "Shipper dock congestion" },
+  { key: "transit",  label: "Line haul transit",       cause: "Weather / road closure" },
+  { key: "pod",      label: "POD & invoice closure",   cause: "POD not returned on time" },
+];
+
+// Baseline stage means in hours, before and after the workflow redesign.
+// The redesign targeted documentation, carrier assignment and POD closure —
+// the three stages the Pareto analysis identified.
+const BASE = {
+  pre:  { intake: 2.4, docs: 15.2, planning: 6.1, carrier: 12.4, pickup: 7.3, transit: 28.0, pod: 9.6 },
+  post: { intake: 2.1, docs:  7.4, planning: 5.4, carrier:  6.6, pickup: 6.6, transit: 27.6, pod: 6.9 },
+};
+
+const LANES = [
+  { id: "ON-ON",  label: "ON → ON (regional)",   mult: 0.55, w: 0.24 },
+  { id: "ON-QC",  label: "ON → QC",              mult: 0.85, w: 0.18 },
+  { id: "ON-USMW",label: "ON → US Midwest",      mult: 1.35, w: 0.22 },
+  { id: "ON-USNE",label: "ON → US Northeast",    mult: 1.15, w: 0.20 },
+  { id: "AB-BC",  label: "AB → BC",              mult: 1.05, w: 0.16 },
+];
+const SERVICES = [
+  { id: "dryvan", label: "Dry van", risk: 1.00, w: 0.52 },
+  { id: "reefer", label: "Reefer",  risk: 1.18, w: 0.28 },
+  { id: "ltl",    label: "LTL",     risk: 1.30, w: 0.20 },
+];
+const SEGMENTS = [
+  { id: "ent", label: "Enterprise", w: 0.62 },
+  { id: "mid", label: "Mid-market", w: 0.38 },
+];
+const MONTHS = ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr"];
+const INTERVENTION_MONTH = 3; // workflow redesign goes live at index 3 (Feb)
+const SLA_TARGET = 72;        // hours, order receipt to invoice closure
+
+function pick(arr) {
+  const r = rand();
+  let acc = 0;
+  for (const item of arr) { acc += item.w; if (r <= acc) return item; }
+  return arr[arr.length - 1];
+}
+
+/* ---------------- dataset ---------------- */
+const DATA = (() => {
+  const rows = [];
+  for (let m = 0; m < MONTHS.length; m++) {
+    const phase = m >= INTERVENTION_MONTH ? "post" : "pre";
+    const base = BASE[phase];
+    // ramp: the redesign took a month to fully embed
+    const ramp = m === INTERVENTION_MONTH ? 0.45 : 0;
+    for (let i = 0; i < 120; i++) {
+      const lane = pick(LANES), svc = pick(SERVICES), seg = pick(SEGMENTS);
+      const winter = m <= 1 ? 1.22 : m === 2 ? 1.10 : 1.0; // Nov–Dec weather drag on transit
+
+      const st = {};
+      for (const s of STAGES) {
+        let mean = base[s.key] + (BASE.pre[s.key] - base[s.key]) * ramp;
+        if (s.key === "transit") mean = mean * lane.mult * winter;
+        if (s.key === "pickup" || s.key === "carrier") mean *= svc.risk;
+        if (s.key === "docs" && seg.id === "mid") mean *= 1.15; // less mature doc process
+        st[s.key] = skew(mean, 0.62);
+      }
+      const total = STAGES.reduce((a, s) => a + st[s.key], 0);
+
+      // Root cause = the stage with the largest excess over its own baseline,
+      // recorded only where the shipment breached the 72h commitment.
+      let cause = null, causeStage = null;
+      if (total > SLA_TARGET) {
+        let worst = null, worstExcess = -Infinity;
+        for (const s of STAGES) {
+          const expected = BASE[phase][s.key] * (s.key === "transit" ? lane.mult * winter : 1);
+          const excess = st[s.key] - expected;
+          if (excess > worstExcess) { worstExcess = excess; worst = s; }
+        }
+        causeStage = worst.key; cause = worst.cause;
+      }
+      rows.push({ m, phase, lane: lane.id, svc: svc.id, seg: seg.id, st, total, cause, causeStage });
+    }
+  }
+  return rows;
+})();
+
+/* ---------------- stats helpers ---------------- */
+const quantile = (sorted, q) => {
+  if (!sorted.length) return 0;
+  const pos = (sorted.length - 1) * q, b = Math.floor(pos), r = pos - b;
+  return sorted[b + 1] !== undefined ? sorted[b] + r * (sorted[b + 1] - sorted[b]) : sorted[b];
+};
+const h = (v) => `${v.toFixed(1)}h`;
+
+/* ---------------- UI atoms ---------------- */
+function Kpi({ label, value, delta, sub, good }) {
+  return (
+    <div className="rounded-xl p-4" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+      <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: c.sub }}>{label}</div>
+      <div className="mt-1.5 flex items-baseline gap-2">
+        <span className="text-2xl font-bold" style={{ color: c.ink, ...num, fontFamily: "'IBM Plex Sans', sans-serif" }}>{value}</span>
+        {delta != null && (
+          <span className="text-xs font-semibold" style={{ color: good ? c.ok : c.bad, ...num }}>
+            {delta > 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(1)}%
+          </span>
+        )}
+      </div>
+      {sub && <div className="mt-0.5 text-[11px]" style={{ color: c.sub }}>{sub}</div>}
+    </div>
+  );
+}
+
+function Seg({ options, value, onChange }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {options.map((o) => (
+        <button key={o.id} onClick={() => onChange(o.id)}
+          className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+          style={{
+            background: value === o.id ? c.accent : c.panel,
+            color: value === o.id ? "#fff" : c.sub,
+            border: `1px solid ${value === o.id ? c.accent : c.line}`,
+          }}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function DeliveryTurnaroundAnalyzer() {
+  const [lane, setLane] = useState("all");
+  const [svc, setSvc] = useState("all");
+  const [seg, setSeg] = useState("all");
+
+  const rows = useMemo(
+    () => DATA.filter((r) => (lane === "all" || r.lane === lane) && (svc === "all" || r.svc === svc) && (seg === "all" || r.seg === seg)),
+    [lane, svc, seg]
+  );
+
+  const pre = useMemo(() => rows.filter((r) => r.m < INTERVENTION_MONTH), [rows]);
+  const post = useMemo(() => rows.filter((r) => r.m > INTERVENTION_MONTH), [rows]); // exclude ramp month
+
+  const stat = (set) => {
+    const s = set.map((r) => r.total).sort((a, b) => a - b);
+    return {
+      n: set.length,
+      median: quantile(s, 0.5),
+      p90: quantile(s, 0.9),
+      onTime: set.length ? (set.filter((r) => r.total <= SLA_TARGET).length / set.length) * 100 : 0,
+    };
+  };
+  const sPre = useMemo(() => stat(pre), [pre]);
+  const sPost = useMemo(() => stat(post), [post]);
+  const sAll = useMemo(() => stat(rows), [rows]);
+
+  const pct = (a, b) => (a === 0 ? 0 : ((b - a) / a) * 100);
+
+  /* monthly trend */
+  const trend = useMemo(() =>
+    MONTHS.map((label, m) => {
+      const set = rows.filter((r) => r.m === m);
+      const st = stat(set);
+      return { month: label, median: +st.median.toFixed(1), p90: +st.p90.toFixed(1), onTime: +st.onTime.toFixed(1), n: st.n };
+    }), [rows]);
+
+  /* stage decomposition, pre vs post */
+  const stages = useMemo(() =>
+    STAGES.map((s) => {
+      const mean = (set) => (set.length ? set.reduce((a, r) => a + r.st[s.key], 0) / set.length : 0);
+      const a = mean(pre), b = mean(post);
+      return { key: s.key, label: s.label, pre: +a.toFixed(1), post: +b.toFixed(1), delta: +(b - a).toFixed(1), pctChange: pct(a, b) };
+    }), [pre, post]);
+
+  /* Pareto of root causes across the full period */
+  const pareto = useMemo(() => {
+    const breached = rows.filter((r) => r.cause);
+    const counts = {};
+    breached.forEach((r) => { counts[r.cause] = (counts[r.cause] || 0) + 1; });
+    const list = Object.entries(counts).map(([cause, n]) => ({ cause, n })).sort((a, b) => b.n - a.n);
+    const total = breached.length || 1;
+    let run = 0;
+    return list.map((d) => { run += d.n; return { ...d, share: (d.n / total) * 100, cum: (run / total) * 100 }; });
+  }, [rows]);
+
+  /* Pareto restricted to the pre-intervention window — what the original investigation saw */
+  const paretoPre = useMemo(() => {
+    const breached = pre.filter((r) => r.cause);
+    const counts = {};
+    breached.forEach((r) => { counts[r.cause] = (counts[r.cause] || 0) + 1; });
+    const total = breached.length || 1;
+    return Object.entries(counts).map(([cause, n]) => ({ cause, share: (n / total) * 100 }))
+      .sort((a, b) => b.share - a.share);
+  }, [pre]);
+
+  const medianDelta = pct(sPre.median, sPost.median);
+  const p90Delta = pct(sPre.p90, sPost.p90);
+  const onTimeDelta = sPost.onTime - sPre.onTime;
+  const biggest = [...stages].sort((a, b) => a.delta - b.delta)[0];
+  const topCauses = paretoPre.slice(0, 2);
+  const vital = pareto.filter((d, i) => i === 0 || pareto[i - 1].cum < 80);
+
+  return (
+    <div style={{ background: c.bg, color: c.ink, fontFamily: "'Inter', system-ui, sans-serif" }} className="min-h-screen w-full">
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');`}</style>
+
+      <div className="mx-auto max-w-6xl px-5 py-8">
+        {/* header */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: c.accent }}>
+              Operations analytics · order-to-invoice cycle time
+            </div>
+            <h1 className="mt-2 text-3xl font-bold" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+              Delivery Turnaround Analyzer
+            </h1>
+            <p className="mt-1 max-w-2xl text-sm" style={{ color: c.sub }}>
+              Decomposes {DATA.length.toLocaleString()} shipments into seven process stages to isolate where turnaround time is lost,
+              attribute every SLA breach to a root cause, and measure the effect of a cross-functional workflow redesign.
+            </p>
+          </div>
+          <div className="rounded-lg px-3 py-2 text-xs" style={{ background: c.accentSoft, color: c.accent }}>
+            <div className="font-semibold">Commitment: {SLA_TARGET}h order-to-invoice</div>
+            <div style={{ color: c.sub }}>Redesign live · {MONTHS[INTERVENTION_MONTH]}</div>
+          </div>
+        </div>
+
+        {/* filters */}
+        <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl px-4 py-3"
+          style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+          <div>
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.sub }}>Lane</div>
+            <Seg value={lane} onChange={setLane} options={[{ id: "all", label: "All lanes" }, ...LANES.map((l) => ({ id: l.id, label: l.label }))]} />
+          </div>
+          <div>
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.sub }}>Service</div>
+            <Seg value={svc} onChange={setSvc} options={[{ id: "all", label: "All" }, ...SERVICES.map((s) => ({ id: s.id, label: s.label }))]} />
+          </div>
+          <div>
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: c.sub }}>Segment</div>
+            <Seg value={seg} onChange={setSeg} options={[{ id: "all", label: "All" }, ...SEGMENTS.map((s) => ({ id: s.id, label: s.label }))]} />
+          </div>
+          <div className="ml-auto text-xs" style={{ color: c.sub, ...num }}>
+            {rows.length.toLocaleString()} shipments in scope
+          </div>
+        </div>
+
+        {/* KPIs */}
+        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Kpi label="Median turnaround" value={h(sPost.median)} delta={medianDelta} good={medianDelta < 0}
+            sub={`was ${h(sPre.median)} pre-redesign`} />
+          <Kpi label="90th percentile" value={h(sPost.p90)} delta={p90Delta} good={p90Delta < 0}
+            sub={`tail exposure, was ${h(sPre.p90)}`} />
+          <Kpi label="On-time to commitment" value={`${sPost.onTime.toFixed(1)}%`} delta={onTimeDelta} good={onTimeDelta > 0}
+            sub={`was ${sPre.onTime.toFixed(1)}%`} />
+          <Kpi label="Breaches attributed" value={`${rows.filter((r) => r.cause).length}`}
+            sub={`${((rows.filter((r) => r.cause).length / (rows.length || 1)) * 100).toFixed(1)}% of shipments`} />
+        </div>
+
+        {/* trend */}
+        <div className="mt-3 rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+          <div className="flex items-baseline justify-between">
+            <div>
+              <div className="text-sm font-semibold">Turnaround trend and service reliability</div>
+              <div className="text-xs" style={{ color: c.sub }}>
+                Median and 90th-percentile cycle time against on-time performance. The dashed marker is the redesign go-live.
+              </div>
+            </div>
+          </div>
+          <div className="mt-4" style={{ height: 280 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={trend} margin={{ top: 8, right: 8, bottom: 4, left: -12 }}>
+                <CartesianGrid stroke={c.grid} vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: c.sub }} axisLine={{ stroke: c.line }} tickLine={false} />
+                <YAxis yAxisId="l" tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} unit="h" />
+                <YAxis yAxisId="r" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} unit="%" />
+                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <ReferenceLine yAxisId="l" x={MONTHS[INTERVENTION_MONTH]} stroke={c.warn} strokeDasharray="4 4"
+                  label={{ value: "redesign", fontSize: 10, fill: c.warn, position: "top" }} />
+                <ReferenceLine yAxisId="l" y={SLA_TARGET} stroke={c.bad} strokeDasharray="2 4" />
+                <Bar yAxisId="l" dataKey="p90" name="90th percentile" fill={c.bar3} radius={[3, 3, 0, 0]} />
+                <Bar yAxisId="l" dataKey="median" name="Median" fill={c.bar1} radius={[3, 3, 0, 0]} />
+                <Line yAxisId="r" type="monotone" dataKey="onTime" name="On-time %" stroke={c.ok} strokeWidth={2.5} dot={{ r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* stage decomposition + pareto */}
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+            <div className="text-sm font-semibold">Where the time goes</div>
+            <div className="text-xs" style={{ color: c.sub }}>
+              Mean hours per stage, before and after. Two stages absorbed most of the total cycle time.
+            </div>
+            <div className="mt-4" style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stages} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 108 }}>
+                  <CartesianGrid stroke={c.grid} horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} unit="h" />
+                  <YAxis type="category" dataKey="label" tick={{ fontSize: 11, fill: c.ink }} axisLine={false} tickLine={false} width={104} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="pre" name="Before" fill={c.neutral} radius={[0, 3, 3, 0]} />
+                  <Bar dataKey="post" name="After" fill={c.bar1} radius={[0, 3, 3, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+            <div className="text-sm font-semibold">Root-cause Pareto</div>
+            <div className="text-xs" style={{ color: c.sub }}>
+              Every breach attributed to the stage with the largest excess over its own baseline. Cumulative line marks the vital few.
+            </div>
+            <div className="mt-4" style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={pareto} margin={{ top: 8, right: 4, bottom: 52, left: -14 }}>
+                  <CartesianGrid stroke={c.grid} vertical={false} />
+                  <XAxis dataKey="cause" tick={{ fontSize: 9, fill: c.sub }} axisLine={{ stroke: c.line }} tickLine={false}
+                    interval={0} angle={-32} textAnchor="end" height={64} />
+                  <YAxis yAxisId="l" tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="r" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} unit="%" />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                  <ReferenceLine yAxisId="r" y={80} stroke={c.warn} strokeDasharray="3 3" />
+                  <Bar yAxisId="l" dataKey="n" name="Breaches" radius={[3, 3, 0, 0]}>
+                    {pareto.map((d, i) => <Cell key={i} fill={d.cum <= 80 ? c.bar1 : c.neutral} />)}
+                  </Bar>
+                  <Line yAxisId="r" type="monotone" dataKey="cum" name="Cumulative %" stroke={c.warn} strokeWidth={2} dot={{ r: 2.5 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* stage table */}
+        <div className="mt-3 overflow-hidden rounded-xl" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+          <div className="px-5 py-4">
+            <div className="text-sm font-semibold">Stage-level change</div>
+            <div className="text-xs" style={{ color: c.sub }}>
+              Pre-redesign months compared against post-redesign months. The go-live month is excluded as a ramp period.
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ color: c.sub, borderTop: `1px solid ${c.line}`, borderBottom: `1px solid ${c.line}` }}>
+                  <th className="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Process stage</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wider">Before</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wider">After</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wider">Change</th>
+                  <th className="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Share of reduction</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const totalCut = stages.reduce((a, s) => a + Math.min(0, s.delta), 0);
+                  return stages.map((s) => {
+                    const share = totalCut < 0 ? (Math.min(0, s.delta) / totalCut) * 100 : 0;
+                    return (
+                      <tr key={s.key} style={{ borderBottom: `1px solid ${c.line}` }}>
+                        <td className="px-5 py-2.5 font-medium">{s.label}</td>
+                        <td className="px-3 py-2.5 text-right" style={{ ...num, color: c.sub }}>{s.pre.toFixed(1)}h</td>
+                        <td className="px-3 py-2.5 text-right font-semibold" style={num}>{s.post.toFixed(1)}h</td>
+                        <td className="px-3 py-2.5 text-right font-semibold" style={{ ...num, color: s.delta < -0.4 ? c.ok : s.delta > 0.4 ? c.bad : c.sub }}>
+                          {s.delta > 0 ? "+" : ""}{s.delta.toFixed(1)}h
+                        </td>
+                        <td className="px-5 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 w-28 overflow-hidden rounded-full" style={{ background: c.grid }}>
+                              <div className="h-full rounded-full" style={{ width: `${share}%`, background: c.bar2 }} />
+                            </div>
+                            <span className="text-xs" style={{ color: c.sub, ...num }}>{share.toFixed(0)}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* findings */}
+        <div className="mt-3 rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}`, borderLeft: `3px solid ${c.accent}` }}>
+          <div className="text-sm font-semibold">Findings</div>
+          <ul className="mt-2 space-y-2 text-sm" style={{ color: c.ink }}>
+            <li>
+              <span style={{ color: c.sub }}>Concentration. </span>
+              {topCauses.length === 2
+                ? <>Before the redesign, {topCauses[0].cause.toLowerCase()} and {topCauses[1].cause.toLowerCase()} together accounted for {(topCauses[0].share + topCauses[1].share).toFixed(0)}% of all breaches — two causes out of {STAGES.length}.</>
+                : <>Breach causes were too dispersed in this slice to isolate a dominant driver.</>}
+            </li>
+            <li>
+              <span style={{ color: c.sub }}>Bottleneck. </span>
+              {biggest && biggest.delta < 0
+                ? <>{biggest.label} carried the largest single reduction at {Math.abs(biggest.delta).toFixed(1)} hours ({Math.abs(biggest.pctChange).toFixed(0)}% faster), confirming it as the binding constraint rather than line haul, which is largely fixed by distance.</>
+                : <>No stage shows a material reduction in this slice.</>}
+            </li>
+            <li>
+              <span style={{ color: c.sub }}>Outcome. </span>
+              Median turnaround moved from {h(sPre.median)} to {h(sPost.median)}, a {Math.abs(medianDelta).toFixed(1)}% reduction, with on-time performance up {onTimeDelta.toFixed(1)} points to {sPost.onTime.toFixed(1)}%.
+            </li>
+            <li>
+              <span style={{ color: c.sub }}>Tail risk. </span>
+              The 90th percentile fell {Math.abs(p90Delta).toFixed(1)}% to {h(sPost.p90)} — the worst shipments improved alongside the average, which is what distinguishes a process fix from a reporting artefact.
+            </li>
+            <li>
+              <span style={{ color: c.sub }}>Residual. </span>
+              {vital.length} cause{vital.length === 1 ? "" : "s"} still account for 80% of remaining breaches; {pareto[0]?.cause.toLowerCase() ?? "the leading cause"} remains the next target.
+            </li>
+          </ul>
+        </div>
+
+        <div className="mt-4 text-center text-[11px]" style={{ color: c.sub }}>
+          Synthetic dataset modelled on North American truckload operations · generated deterministically for reproducibility · no client data used
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(mulberry32));
+<\/script>
+</body>
+</html>
