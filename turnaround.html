@@ -4,23 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Delivery Turnaround Analyzer — Vaibhav Vasishth</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
-<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"><\/script>
-<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"><\/script>
-<script src="https://cdn.tailwindcss.com"><\/script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 <style>body{margin:0;padding:0}</style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useMemo } = React;
-const { ResponsiveContainer, ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, ReferenceLine,  } = Recharts;
-
-import {
-  ResponsiveContainer, ComposedChart, BarChart, Bar, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, Cell, ReferenceLine,
-} from "recharts";
+const { useMemo, useState } = React;
+const { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } = Recharts;
 
 /* ------------------------------------------------------------------ *
  * Delivery Turnaround Analyzer
@@ -258,9 +253,7 @@ function DeliveryTurnaroundAnalyzer() {
 
   return (
     <div style={{ background: c.bg, color: c.ink, fontFamily: "'Inter', system-ui, sans-serif" }} className="min-h-screen w-full">
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');`}</style>
-
-      <div className="mx-auto max-w-6xl px-5 py-8">
+      <style>{`@      <div className="mx-auto max-w-6xl px-5 py-8">
         {/* header */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -479,7 +472,7 @@ function DeliveryTurnaroundAnalyzer() {
 }
 
 
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(mulberry32));
-<\/script>
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(DeliveryTurnaroundAnalyzer));
+</script>
 </body>
 </html>
