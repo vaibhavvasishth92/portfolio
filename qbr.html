@@ -6,9 +6,11 @@
 <title>Portfolio Governance & QBR Pack Generator — Vaibhav Vasishth</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
 <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>body{margin:0;padding:0}</style>
 </head>
 <body>
@@ -223,14 +225,14 @@ function buildWatchlist(quarterKey) {
       acctFlags.push({
         severity: "high",
         flag: "Growth at declining margin",
-        detail: `Revenue +${qRevVarPct.toFixed(1)}% over plan while margin erodes at ${slope.toFixed(0)} bps/month (R²=${r2.toFixed(2)}). Volume growth may be bought at unprofitable rates.`,
+        detail: 'Revenue +' + qRevVarPct.toFixed(1) + '% over plan while margin erodes at ' + slope.toFixed(0) + ' bps/month (R²=' + r2.toFixed(2) + '). Volume growth may be bought at unprofitable rates.',
         action: "Review rate concessions with Pricing; validate lane-level margin in next QBR.",
       });
     } else if (eroding) {
       acctFlags.push({
         severity: "high",
         flag: "Margin erosion",
-        detail: `Trailing-6-month margin slope: ${slope.toFixed(0)} bps/month (R²=${r2.toFixed(2)}). Sustained decline beyond normal noise.`,
+        detail: 'Trailing-6-month margin slope: ' + slope.toFixed(0) + ' bps/month (R²=' + r2.toFixed(2) + '). Sustained decline beyond normal noise.',
         action: "Root-cause margin by lane; escalate to Finance if driven by cost, to Sales if driven by rate.",
       });
     }
@@ -240,7 +242,7 @@ function buildWatchlist(quarterKey) {
       acctFlags.push({
         severity: qRevVarPct < -15 ? "high" : "medium",
         flag: "Volume below plan — competitive displacement risk",
-        detail: `Trailing-3-month volume averaging ${volGapPct.toFixed(1)}% below plan. Revenue variance: ${qRevVarPct > 0 ? "+" : ""}${qRevVarPct.toFixed(1)}%.`,
+        detail: 'Trailing-3-month volume averaging ' + volGapPct.toFixed(1) + '% below plan. Revenue variance: ' + qRevVarPct > 0 ? "+" : "" + qRevVarPct.toFixed(1) + '%.',
         action: "Request shipper-side volume allocation data; assess competitive positioning.",
       });
     }
@@ -250,7 +252,7 @@ function buildWatchlist(quarterKey) {
       acctFlags.push({
         severity: "medium",
         flag: "Margin step-down — possible renewal concession",
-        detail: `Quarter-over-quarter margin dropped ${Math.abs(marginStep).toFixed(1)} ppt. Consistent with a rate concession at renewal.`,
+        detail: 'Quarter-over-quarter margin dropped ' + Math.abs(marginStep).toFixed(1) + ' ppt. Consistent with a rate concession at renewal.',
         action: "Confirm whether renewal terms were adjusted; recalculate account profitability.",
       });
     }
@@ -262,7 +264,7 @@ function buildWatchlist(quarterKey) {
         acctFlags.push({
           severity: "medium",
           flag: "One-time volume loss — lost lane",
-          detail: `Sharp volume drop in ${hitMonths.map((r) => r.month).join(", ")} followed by recovery. Pattern consistent with a lost lane rather than systematic displacement.`,
+          detail: 'Sharp volume drop in ' + hitMonths.map((r) => r.month).join(", ") + ' followed by recovery. Pattern consistent with a lost lane rather than systematic displacement.',
           action: "Confirm lane loss with account team; assess whether recovery is sustainable.",
         });
       }
@@ -306,15 +308,15 @@ function genExecSummary(quarterKey, watchlist) {
   const highFlags = watchlist.filter((w) => w.flags.some((f) => f.severity === "high"));
   const medFlags = watchlist.filter((w) => w.flags.every((f) => f.severity === "medium"));
 
-  let summary = `${qLabel} portfolio revenue was $${(totalActRev / 1000).toFixed(1)}K against a plan of $${(totalPlanRev / 1000).toFixed(1)}K, a variance of ${totalVar >= 0 ? "+" : ""}$${(totalVar / 1000).toFixed(1)}K (${totalVarPct >= 0 ? "+" : ""}${totalVarPct.toFixed(1)}%). `;
-  summary += `The variance was primarily ${driver}-driven: volume effect ${totalVolEff >= 0 ? "+" : ""}$${(totalVolEff / 1000).toFixed(1)}K, yield effect ${totalYieldEff >= 0 ? "+" : ""}$${(totalYieldEff / 1000).toFixed(1)}K. `;
+  let summary = qLabel + ' portfolio revenue was $' + (totalActRev / 1000).toFixed(1) + 'K against a plan of $' + (totalPlanRev / 1000).toFixed(1) + 'K, a variance of ' + totalVar >= 0 ? "+" : "" + '$' + (totalVar / 1000).toFixed(1) + 'K (' + totalVarPct >= 0 ? "+" : "" + totalVarPct.toFixed(1) + '%). ';
+  summary += 'The variance was primarily ' + driver + '-driven: volume effect ' + totalVolEff >= 0 ? "+" : "" + '$' + (totalVolEff / 1000).toFixed(1) + 'K, yield effect ' + totalYieldEff >= 0 ? "+" : "" + '$' + (totalYieldEff / 1000).toFixed(1) + 'K. ';
 
   if (highFlags.length > 0) {
-    summary += `${highFlags.length} account${highFlags.length > 1 ? "s" : ""} flagged at high severity: `;
-    summary += highFlags.map((w) => `${w.acct.name} (${w.flags[0].flag.toLowerCase()})`).join(", ") + ". ";
+    summary += highFlags.length + ' account' + highFlags.length > 1 ? "s" : "" + ' flagged at high severity: ';
+    summary += highFlags.map((w) => w.acct.name + ' (' + w.flags[0].flag.toLowerCase() + ')').join(", ") + ". ";
   }
   if (medFlags.length > 0) {
-    summary += `${medFlags.length} additional account${medFlags.length > 1 ? "s" : ""} on the watchlist at medium severity. `;
+    summary += medFlags.length + ' additional account' + medFlags.length > 1 ? "s" : "" + ' on the watchlist at medium severity. ';
   }
   if (watchlist.length === 0) {
     summary += "No accounts flagged for the watchlist this quarter — all within tolerance. ";
@@ -324,14 +326,14 @@ function genExecSummary(quarterKey, watchlist) {
 }
 
 /* ---------- UI atoms ---------- */
-const $K = (v) => `$${(v / 1000).toFixed(1)}K`;
-const pct = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+const $K = (v) => '$' + (v / 1000).toFixed(1) + 'K';
+const pct = (v) => v >= 0 ? "+" : "" + v.toFixed(1) + '%';
 const sevColor = (s) => s === "high" ? c.bad : c.warn;
 const sevBg = (s) => s === "high" ? c.badBg : c.warnBg;
 
 function Kpi({ label, value, delta, sub, good }) {
   return (
-    <div className="rounded-xl p-4" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+    <div className="rounded-xl p-4" style={{ background: c.panel, border: '1px solid ' + c.line }}>
       <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: c.sub }}>{label}</div>
       <div className="mt-1.5 flex items-baseline gap-2">
         <span className="text-2xl font-bold" style={{ color: c.ink, ...num, fontFamily: "'Archivo', sans-serif" }}>{value}</span>
@@ -349,7 +351,7 @@ function Kpi({ label, value, delta, sub, good }) {
 function Tab({ label, active, onClick }) {
   return (
     <button onClick={onClick} className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
-      style={{ background: active ? c.navy : "transparent", color: active ? "#fff" : c.sub, border: `1px solid ${active ? c.navy : c.line}` }}>
+      style={{ background: active ? c.navy : "transparent", color: active ? "#fff" : c.sub, border: '1px solid ' + active ? c.navy : c.line }}>
       {label}
     </button>
   );
@@ -410,7 +412,7 @@ function QBRPackGenerator() {
 
   return (
     <div style={{ background: c.bg, color: c.ink, fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }} className="min-h-screen w-full">
-      <style>{`@        @media print{.no-print{display:none!important}.print-only{display:block!important}body{background:#fff}}`}</style>
+      <style>{`@media print{.no-print{display:none!important}.print-only{display:block!important}body{background:#fff}}`}</style>
 
       <div className="mx-auto max-w-6xl px-5 py-8">
         {/* header */}
@@ -430,7 +432,7 @@ function QBRPackGenerator() {
             <span className="text-xs font-medium" style={{ color: c.sub }}>Quarter:</span>
             <select value={quarter} onChange={(e) => { setQuarter(e.target.value); setSelAcct(null); }}
               className="rounded-lg px-3 py-2 text-sm font-semibold outline-none"
-              style={{ border: `1px solid ${c.line}`, color: c.ink, background: c.panel }}>
+              style={{ border: '1px solid ' + c.line, color: c.ink, background: c.panel }}>
               {QUARTERS.map((q) => <option key={q.key} value={q.key}>{q.label}</option>)}
             </select>
           </div>
@@ -439,7 +441,7 @@ function QBRPackGenerator() {
         {/* view tabs */}
         <div className="no-print mt-5 flex flex-wrap gap-2">
           <Tab label="Dashboard" active={view === "dashboard"} onClick={() => setView("dashboard")} />
-          <Tab label={`Watchlist (${watchlist.length})`} active={view === "watchlist"} onClick={() => setView("watchlist")} />
+          <Tab label={'Watchlist (' + watchlist.length + ')'} active={view === "watchlist"} onClick={() => setView("watchlist")} />
           <Tab label="QBR Pack" active={view === "pack"} onClick={() => setView("pack")} />
         </div>
 
@@ -447,14 +449,14 @@ function QBRPackGenerator() {
         {view === "dashboard" && (
           <div className="mt-5 space-y-4">
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <Kpi label="Plan revenue" value={$K(portfolio.planRev)} sub={`${q.label}`} />
+              <Kpi label="Plan revenue" value={$K(portfolio.planRev)} sub={q.label} />
               <Kpi label="Actual revenue" value={$K(portfolio.actRev)} delta={portfolio.totalVarPct} good={portfolio.totalVarPct >= 0} sub="vs plan" />
               <Kpi label="Volume effect" value={$K(portfolio.volEff)} sub="volume-driven variance" />
               <Kpi label="Yield effect" value={$K(portfolio.yieldEff)} sub="rate-driven variance" />
             </div>
 
             {/* portfolio trend */}
-            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line }}>
               <div className="text-sm font-semibold">Portfolio revenue: plan vs actual</div>
               <div className="text-xs" style={{ color: c.sub }}>Monthly revenue across all {ACCOUNTS.length} accounts through {q.label}.</div>
               <div className="mt-4" style={{ height: 260 }}>
@@ -463,7 +465,7 @@ function QBRPackGenerator() {
                     <CartesianGrid stroke={c.grid} vertical={false} />
                     <XAxis dataKey="month" tick={{ fontSize: 10, fill: c.sub }} axisLine={{ stroke: c.line }} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                    <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid ' + c.line, fontSize: 12 }} />
                     <Area type="monotone" dataKey="plan" name="Plan" fill={c.navySoft} stroke={c.navy} strokeWidth={1.5} strokeDasharray="4 3" fillOpacity={0.3} />
                     <Area type="monotone" dataKey="actual" name="Actual" fill={c.tealSoft} stroke={c.teal} strokeWidth={2} fillOpacity={0.4} />
                   </AreaChart>
@@ -472,12 +474,12 @@ function QBRPackGenerator() {
             </div>
 
             {/* account table */}
-            <div className="overflow-hidden rounded-xl" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+            <div className="overflow-hidden rounded-xl" style={{ background: c.panel, border: '1px solid ' + c.line }}>
               <div className="px-5 py-4 text-sm font-semibold">Account variance — {q.label}</div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ color: c.sub, borderTop: `1px solid ${c.line}`, borderBottom: `1px solid ${c.line}` }}>
+                    <tr style={{ color: c.sub, borderTop: '1px solid ' + c.line, borderBottom: '1px solid ' + c.line }}>
                       <th className="px-5 py-2 text-left text-xs font-semibold">Account</th>
                       <th className="px-3 py-2 text-right text-xs font-semibold">Plan</th>
                       <th className="px-3 py-2 text-right text-xs font-semibold">Actual</th>
@@ -494,7 +496,7 @@ function QBRPackGenerator() {
                       return (
                         <tr key={a.id} className="cursor-pointer transition-colors hover:bg-gray-50"
                           onClick={() => setSelAcct(selAcct === a.id ? null : a.id)}
-                          style={{ borderBottom: `1px solid ${c.line}` }}>
+                          style={{ borderBottom: '1px solid ' + c.line }}>
                           <td className="px-5 py-2.5 font-medium">{a.name}</td>
                           <td className="px-3 py-2.5 text-right" style={{ ...num, color: c.sub }}>{$K(a.planRev)}</td>
                           <td className="px-3 py-2.5 text-right font-semibold" style={num}>{$K(a.actRev)}</td>
@@ -505,7 +507,7 @@ function QBRPackGenerator() {
                           </td>
                           <td className="px-3 py-2.5 text-right" style={num}>{a.avgMargin.toFixed(1)}%</td>
                           <td className="px-5 py-2.5 text-right text-xs" style={{ color: check < 0.15 ? c.ok : c.bad, ...num }}>
-                            {check < 0.15 ? "✓" : `Δ${check.toFixed(2)}`}
+                            {check < 0.15 ? "✓" : 'Δ' + check.toFixed(2)}
                           </td>
                         </tr>
                       );
@@ -513,7 +515,7 @@ function QBRPackGenerator() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-5 py-3 text-[11px]" style={{ color: c.sub, borderTop: `1px solid ${c.line}` }}>
+              <div className="px-5 py-3 text-[11px]" style={{ color: c.sub, borderTop: '1px solid ' + c.line }}>
                 Check column: vol. effect + yield effect ≡ total variance (rounding tolerance 0.15). Click an account for its trend.
               </div>
             </div>
@@ -521,7 +523,7 @@ function QBRPackGenerator() {
             {/* account detail */}
             {selAcct && (
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line }}>
                   <div className="text-sm font-semibold">{ACCOUNTS.find((a) => a.id === selAcct)?.name} — revenue trend</div>
                   <div style={{ height: 220 }} className="mt-3">
                     <ResponsiveContainer width="100%" height="100%">
@@ -529,14 +531,14 @@ function QBRPackGenerator() {
                         <CartesianGrid stroke={c.grid} vertical={false} />
                         <XAxis dataKey="month" tick={{ fontSize: 10, fill: c.sub }} tickLine={false} />
                         <YAxis tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                        <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid ' + c.line, fontSize: 12 }} />
                         <Bar dataKey="plan" name="Plan" fill={c.neutral} radius={[2, 2, 0, 0]} />
                         <Line type="monotone" dataKey="actual" name="Actual" stroke={c.teal} strokeWidth={2.5} dot={{ r: 2.5 }} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-                <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line }}>
                   <div className="text-sm font-semibold">{ACCOUNTS.find((a) => a.id === selAcct)?.name} — margin trend</div>
                   <div style={{ height: 220 }} className="mt-3">
                     <ResponsiveContainer width="100%" height="100%">
@@ -544,7 +546,7 @@ function QBRPackGenerator() {
                         <CartesianGrid stroke={c.grid} vertical={false} />
                         <XAxis dataKey="month" tick={{ fontSize: 10, fill: c.sub }} tickLine={false} />
                         <YAxis tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} unit="%" />
-                        <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                        <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid ' + c.line, fontSize: 12 }} />
                         <Area type="monotone" dataKey="margin" name="Margin %" fill={c.navySoft} stroke={c.navy} strokeWidth={2} fillOpacity={0.3} />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -558,7 +560,7 @@ function QBRPackGenerator() {
         {/* ============ WATCHLIST ============ */}
         {view === "watchlist" && (
           <div className="mt-5 space-y-4">
-            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}`, borderLeft: `3px solid ${c.navy}` }}>
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line, borderLeft: '3px solid ' + c.navy }}>
               <div className="text-sm font-semibold">Methodology</div>
               <div className="mt-2 space-y-1.5 text-[13px]" style={{ color: c.sub }}>
                 <p><strong style={{ color: c.ink }}>Margin erosion:</strong> trailing-6-month OLS regression on monthly margin %. Flagged when slope ≤ −18 bps/month <em>and</em> R² ≥ 0.45. A slope test without a fit threshold flags noise; a level test misses gradual leakage.</p>
@@ -569,15 +571,15 @@ function QBRPackGenerator() {
             </div>
 
             {watchlist.length === 0 && (
-              <div className="rounded-xl p-8 text-center" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+              <div className="rounded-xl p-8 text-center" style={{ background: c.panel, border: '1px solid ' + c.line }}>
                 <div className="text-sm font-semibold" style={{ color: c.ok }}>No accounts flagged for {q.label}.</div>
                 <div className="mt-1 text-xs" style={{ color: c.sub }}>All accounts within tolerance.</div>
               </div>
             )}
 
             {watchlist.map((w) => (
-              <div key={w.acct.id} className="overflow-hidden rounded-xl" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
-                <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4" style={{ borderBottom: `1px solid ${c.line}` }}>
+              <div key={w.acct.id} className="overflow-hidden rounded-xl" style={{ background: c.panel, border: '1px solid ' + c.line }}>
+                <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4" style={{ borderBottom: '1px solid ' + c.line }}>
                   <div>
                     <div className="font-semibold">{w.acct.name}</div>
                     <div className="text-xs" style={{ color: c.sub }}>
@@ -595,7 +597,7 @@ function QBRPackGenerator() {
                   </div>
                 </div>
                 {w.flags.map((f, i) => (
-                  <div key={i} className="px-5 py-3" style={{ borderBottom: i < w.flags.length - 1 ? `1px solid ${c.line}` : "none" }}>
+                  <div key={i} className="px-5 py-3" style={{ borderBottom: i < w.flags.length - 1 ? '1px solid ' + c.line : "none" }}>
                     <div className="text-sm" style={{ color: c.ink }}>{f.detail}</div>
                     <div className="mt-2 rounded-lg px-3 py-2 text-sm font-medium"
                       style={{ background: sevBg(f.severity), color: sevColor(f.severity) }}>
@@ -630,7 +632,7 @@ function QBRPackGenerator() {
               </div>
 
               {/* exec summary */}
-              <div className="rounded-xl p-6" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+              <div className="rounded-xl p-6" style={{ background: c.panel, border: '1px solid ' + c.line }}>
                 <div className="mb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: c.navy }}>Executive summary</div>
                 <p className="text-[15px] leading-relaxed" style={{ color: c.ink }}>{execSummary}</p>
               </div>
@@ -644,7 +646,7 @@ function QBRPackGenerator() {
               </div>
 
               {/* variance chart */}
-              <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+              <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line }}>
                 <div className="mb-1 text-sm font-semibold">Revenue variance by account — {q.label}</div>
                 <div className="text-xs" style={{ color: c.sub }}>Sorted worst to best. Each bar decomposes into volume and yield effects.</div>
                 <div className="mt-4" style={{ height: 300 }}>
@@ -653,7 +655,7 @@ function QBRPackGenerator() {
                       <CartesianGrid stroke={c.grid} horizontal={false} />
                       <XAxis type="number" tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false} />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: c.ink }} axisLine={false} tickLine={false} width={106} />
-                      <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                      <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid ' + c.line, fontSize: 12 }} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
                       <Bar dataKey="volEff" name="Volume effect" stackId="a" fill={c.bar2} />
                       <Bar dataKey="yieldEff" name="Yield effect" stackId="a" fill={c.bar3} />
@@ -665,12 +667,12 @@ function QBRPackGenerator() {
 
               {/* watchlist summary */}
               {watchlist.length > 0 && (
-                <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line }}>
                   <div className="mb-3 text-sm font-semibold">Watchlist — {q.label}</div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr style={{ color: c.sub, borderBottom: `1px solid ${c.line}` }}>
+                        <tr style={{ color: c.sub, borderBottom: '1px solid ' + c.line }}>
                           <th className="px-4 py-2 text-left text-xs font-semibold">Account</th>
                           <th className="px-3 py-2 text-left text-xs font-semibold">Flag</th>
                           <th className="px-3 py-2 text-left text-xs font-semibold">Severity</th>
@@ -679,7 +681,7 @@ function QBRPackGenerator() {
                       </thead>
                       <tbody>
                         {watchlist.flatMap((w) => w.flags.map((f, i) => (
-                          <tr key={w.acct.id + i} style={{ borderBottom: `1px solid ${c.line}` }}>
+                          <tr key={w.acct.id + i} style={{ borderBottom: '1px solid ' + c.line }}>
                             <td className="px-4 py-2 font-medium">{i === 0 ? w.acct.name : ""}</td>
                             <td className="px-3 py-2">{f.flag}</td>
                             <td className="px-3 py-2">

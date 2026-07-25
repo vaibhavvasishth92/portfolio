@@ -6,9 +6,11 @@
 <title>Implementation Gate Tracker — Vaibhav Vasishth</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
 <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>body{margin:0;padding:0}</style>
 </head>
 <body>
@@ -275,7 +277,7 @@ function Chip({ status }) {
 
 function Kpi({ label, value, sub, color }) {
   return (
-    <div className="rounded-xl p-4" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+    <div className="rounded-xl p-4" style={{ background: c.panel, border: '1px solid ' + c.line }}>
       <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: c.sub }}>{label}</div>
       <div className="mt-1.5 text-2xl font-bold" style={{ color: color || c.ink, ...num, fontFamily: "'Archivo', sans-serif" }}>{value}</div>
       {sub && <div className="mt-0.5 text-[11px]" style={{ color: c.sub }}>{sub}</div>}
@@ -291,11 +293,11 @@ function GateBar({ project }) {
         const w = 25; // 4 gates = 25% each
         let bg = c.line;
         if (g.actual.status === "completed") bg = statusColor(g.health === "on-track" ? "on-track" : g.health === "watch" ? "watch" : "at-risk");
-        else if (g.actual.status === "in-progress") bg = `repeating-linear-gradient(90deg, ${statusColor(g.health)} 0, ${statusColor(g.health)} 6px, transparent 6px, transparent 10px)`;
+        else if (g.actual.status === "in-progress") bg = 'repeating-linear-gradient(90deg, ' + statusColor(g.health) + ' 0, ' + statusColor(g.health) + ' 6px, transparent 6px, transparent 10px)';
         else if (g.actual.status === "blocked") bg = c.bad;
 
         return (
-          <div key={i} className="relative h-2 rounded-full" style={{ width: `${w}%`, background: g.actual.status === "in-progress" ? undefined : bg }}>
+          <div key={i} className="relative h-2 rounded-full" style={{ width: w + '%', background: g.actual.status === "in-progress" ? undefined : bg }}>
             {g.actual.status === "in-progress" && (
               <div className="h-full rounded-full" style={{ width: "60%", background: statusColor(g.health) }} />
             )}
@@ -394,7 +396,7 @@ function ImplementationGateTracker() {
 
   return (
     <div style={{ background: c.bg, color: c.ink, fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }} className="min-h-screen w-full">
-      <style>{`@      <div className="mx-auto max-w-6xl px-5 py-8">
+      <div className="mx-auto max-w-6xl px-5 py-8">
         {/* header */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -415,7 +417,7 @@ function ImplementationGateTracker() {
           {[["portfolio", "Portfolio"], ["burndown", "Burn-down"], ["detail", "Gate detail"]].map(([k, l]) => (
             <button key={k} onClick={() => setView(k)}
               className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
-              style={{ background: view === k ? c.navy : "transparent", color: view === k ? "#fff" : c.sub, border: `1px solid ${view === k ? c.navy : c.line}` }}>
+              style={{ background: view === k ? c.navy : "transparent", color: view === k ? "#fff" : c.sub, border: '1px solid ' + view === k ? c.navy : c.line }}>
               {l}
             </button>
           ))}
@@ -423,11 +425,11 @@ function ImplementationGateTracker() {
 
         {/* KPIs */}
         <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
-          <Kpi label="Active projects" value={stats.total} sub={`${stats.completed} completed`} />
+          <Kpi label="Active projects" value={stats.total} sub={stats.completed + ' completed'} />
           <Kpi label="On track" value={stats.onTrack} color={c.ok} sub="within tolerance" />
           <Kpi label="At risk / blocked" value={stats.atRisk} color={c.bad} sub="need intervention" />
-          <Kpi label="Gates completed" value={`${stats.gatesCompleted}/${stats.gatesTotal}`} sub={`${Math.round((stats.gatesCompleted / stats.gatesTotal) * 100)}% through`} />
-          <Kpi label="Avg. schedule variance" value={`${stats.avgSV > 0 ? "+" : ""}${stats.avgSV}d`} color={stats.avgSV > 3 ? c.bad : stats.avgSV > 0 ? c.warn : c.ok} sub="days vs plan" />
+          <Kpi label="Gates completed" value={stats.gatesCompleted + '/' + stats.gatesTotal} sub={Math.round((stats.gatesCompleted / stats.gatesTotal) * 100) + '% through'} />
+          <Kpi label="Avg. schedule variance" value={stats.avgSV > 0 ? "+" : "" + stats.avgSV + 'd'} color={stats.avgSV > 3 ? c.bad : stats.avgSV > 0 ? c.warn : c.ok} sub="days vs plan" />
         </div>
 
         {/* ============ PORTFOLIO VIEW ============ */}
@@ -438,17 +440,17 @@ function ImplementationGateTracker() {
               {[["all", "All"], ["on-track", "On track"], ["watch", "Watch"], ["at-risk", "At risk"], ["blocked", "Blocked"], ["completed", "Completed"]].map(([k, l]) => (
                 <button key={k} onClick={() => setFilterStatus(k)}
                   className="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
-                  style={{ background: filterStatus === k ? c.navy : c.panel, color: filterStatus === k ? "#fff" : c.sub, border: `1px solid ${filterStatus === k ? c.navy : c.line}` }}>
+                  style={{ background: filterStatus === k ? c.navy : c.panel, color: filterStatus === k ? "#fff" : c.sub, border: '1px solid ' + filterStatus === k ? c.navy : c.line }}>
                   {l}
                 </button>
               ))}
             </div>
 
-            <div className="overflow-hidden rounded-xl" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+            <div className="overflow-hidden rounded-xl" style={{ background: c.panel, border: '1px solid ' + c.line }}>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ color: c.sub, borderBottom: `1px solid ${c.line}` }}>
+                    <tr style={{ color: c.sub, borderBottom: '1px solid ' + c.line }}>
                       <th className="px-5 py-2.5 text-left text-xs font-semibold">Implementation</th>
                       <th className="px-3 py-2.5 text-left text-xs font-semibold">Segment</th>
                       <th className="px-3 py-2.5 text-center text-xs font-semibold">Gate progress</th>
@@ -461,7 +463,7 @@ function ImplementationGateTracker() {
                     {filtered.map((p) => (
                       <tr key={p.id} className="cursor-pointer transition-colors hover:bg-gray-50"
                         onClick={() => { setSelProj(p.id); setView("detail"); }}
-                        style={{ borderBottom: `1px solid ${c.line}` }}>
+                        style={{ borderBottom: '1px solid ' + c.line }}>
                         <td className="px-5 py-3">
                           <div className="font-semibold">{p.name}</div>
                           <div className="text-xs" style={{ color: c.sub }}>{p.service} · {p.complexity}</div>
@@ -484,7 +486,7 @@ function ImplementationGateTracker() {
             </div>
 
             {/* SV scatter */}
-            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line }}>
               <div className="text-sm font-semibold">Schedule variance vs. progress</div>
               <div className="text-xs" style={{ color: c.sub }}>Active projects plotted by current gate (x) and cumulative schedule variance in days (y). Top-left quadrant = early stage with high slippage.</div>
               <div className="mt-4" style={{ height: 240 }}>
@@ -502,7 +504,7 @@ function ImplementationGateTracker() {
                         if (!payload || !payload.length) return null;
                         const d = payload[0].payload;
                         return (
-                          <div className="rounded-lg px-3 py-2 text-xs shadow" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                          <div className="rounded-lg px-3 py-2 text-xs shadow" style={{ background: c.panel, border: '1px solid ' + c.line }}>
                             <div className="font-semibold">{d.name}</div>
                             <div style={{ color: c.sub }}>Gate {d.x} · SV {d.y > 0 ? "+" : ""}{d.y}d</div>
                           </div>
@@ -521,7 +523,7 @@ function ImplementationGateTracker() {
         {/* ============ BURN-DOWN VIEW ============ */}
         {view === "burndown" && (
           <div className="mt-4 space-y-3">
-            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line }}>
               <div className="text-sm font-semibold">Milestone burn-down</div>
               <div className="text-xs" style={{ color: c.sub }}>
                 Remaining gate milestones over time. The planned baseline (dashed) vs actual completion. Gap = portfolio-level schedule slippage.
@@ -534,7 +536,7 @@ function ImplementationGateTracker() {
                       angle={-30} textAnchor="end" height={48} />
                     <YAxis tick={{ fontSize: 11, fill: c.sub }} axisLine={false} tickLine={false}
                       label={{ value: "Gates remaining", angle: -90, position: "insideLeft", fontSize: 11, fill: c.sub }} />
-                    <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${c.line}`, fontSize: 12 }} />
+                    <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid ' + c.line, fontSize: 12 }} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     <Line type="stepAfter" dataKey="planned" name="Planned baseline" stroke={c.neutral} strokeWidth={2} strokeDasharray="6 4" dot={false} />
                     <Line type="stepAfter" dataKey="actual" name="Actual" stroke={c.navy} strokeWidth={2.5} dot={false} />
@@ -543,7 +545,7 @@ function ImplementationGateTracker() {
               </div>
             </div>
 
-            <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}`, borderLeft: `3px solid ${c.navy}` }}>
+            <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line, borderLeft: '3px solid ' + c.navy }}>
               <div className="text-sm font-semibold">Reading the chart</div>
               <div className="mt-2 text-sm" style={{ color: c.sub }}>
                 The dashed line is the planned baseline — where the portfolio would be if every gate closed on its planned date. The solid line is actual. When the actual line runs above the planned line, the portfolio is behind schedule — more gates remain open than planned. The vertical gap at any point is the number of gates that have slipped. A steepening gap means slippage is accelerating; a narrowing gap means the team is recovering.
@@ -559,14 +561,14 @@ function ImplementationGateTracker() {
               <span className="text-xs font-medium" style={{ color: c.sub }}>Select project:</span>
               <select value={selProj ?? ""} onChange={(e) => setSelProj(Number(e.target.value))}
                 className="rounded-lg px-3 py-2 text-sm outline-none"
-                style={{ border: `1px solid ${c.line}`, color: c.ink, background: c.panel }}>
+                style={{ border: '1px solid ' + c.line, color: c.ink, background: c.panel }}>
                 {PROJECTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
 
             {selected && (
               <>
-                <div className="flex flex-wrap items-center gap-4 rounded-xl px-5 py-4" style={{ background: c.panel, border: `1px solid ${c.line}` }}>
+                <div className="flex flex-wrap items-center gap-4 rounded-xl px-5 py-4" style={{ background: c.panel, border: '1px solid ' + c.line }}>
                   <div>
                     <div className="text-lg font-bold" style={{ fontFamily: "'Archivo', sans-serif" }}>{selected.name}</div>
                     <div className="text-xs" style={{ color: c.sub }}>{selected.segment} · {selected.service} · {selected.complexity} complexity</div>
@@ -585,7 +587,7 @@ function ImplementationGateTracker() {
                 {/* Gate cards */}
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {selected.gates.map((g, i) => (
-                    <div key={i} className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}`, borderLeft: `3px solid ${statusColor(g.health)}` }}>
+                    <div key={i} className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line, borderLeft: '3px solid ' + statusColor(g.health) }}>
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.sub }}>{g.phase}</div>
@@ -635,19 +637,19 @@ function ImplementationGateTracker() {
                 </div>
 
                 {/* Findings */}
-                <div className="rounded-xl p-5" style={{ background: c.panel, border: `1px solid ${c.line}`, borderLeft: `3px solid ${c.navy}` }}>
+                <div className="rounded-xl p-5" style={{ background: c.panel, border: '1px solid ' + c.line, borderLeft: '3px solid ' + c.navy }}>
                   <div className="text-sm font-semibold">Assessment</div>
                   <div className="mt-2 text-sm" style={{ color: c.ink }}>
                     {selected.status === "completed" &&
-                      `All four gates closed. Total schedule variance: ${selected.totalSV > 0 ? "+" : ""}${selected.totalSV} days against plan. ${selected.totalSV <= 0 ? "Delivered on or ahead of schedule." : selected.totalSV <= 5 ? "Minor slippage within acceptable tolerance." : "Slippage exceeded tolerance — lessons learned should be documented."}`}
+                      'All four gates closed. Total schedule variance: ' + selected.totalSV > 0 ? "+" : "" + selected.totalSV + ' days against plan. ' + selected.totalSV <= 0 ? "Delivered on or ahead of schedule." : selected.totalSV <= 5 ? "Minor slippage within acceptable tolerance." : "Slippage exceeded tolerance — lessons learned should be documented."}
                     {selected.status === "on-track" &&
-                      `Currently at Gate ${selected.currentGate + 1} (${GATES[selected.currentGate]?.name}). Cumulative SV: ${selected.totalSV > 0 ? "+" : ""}${selected.totalSV} days. All completed gates within tolerance — no intervention required.`}
+                      'Currently at Gate ' + selected.currentGate + 1 + ' (' + GATES[selected.currentGate]?.name + '). Cumulative SV: ' + selected.totalSV > 0 ? "+" : "" + selected.totalSV + ' days. All completed gates within tolerance — no intervention required.'}
                     {selected.status === "watch" &&
-                      `Currently at Gate ${selected.currentGate + 1} (${GATES[selected.currentGate]?.name}). Cumulative SV: +${selected.totalSV} days. Slippage is accumulating — review the ${GATES[Math.max(0, selected.currentGate - 1)]?.name} gate exit criteria for incomplete items before proceeding.`}
+                      'Currently at Gate ' + selected.currentGate + 1 + ' (' + GATES[selected.currentGate]?.name + '). Cumulative SV: +' + selected.totalSV + ' days. Slippage is accumulating — review the ' + GATES[Math.max(0, selected.currentGate - 1)]?.name + ' gate exit criteria for incomplete items before proceeding.'}
                     {selected.status === "at-risk" &&
-                      `Currently at Gate ${selected.currentGate + 1} (${GATES[selected.currentGate]?.name}). Cumulative SV: +${selected.totalSV} days. Schedule recovery is unlikely without intervention. Recommend: escalate to account sponsor, reassess scope or resource allocation, and hold a gate review before advancing.`}
+                      'Currently at Gate ' + selected.currentGate + 1 + ' (' + GATES[selected.currentGate]?.name + '). Cumulative SV: +' + selected.totalSV + ' days. Schedule recovery is unlikely without intervention. Recommend: escalate to account sponsor, reassess scope or resource allocation, and hold a gate review before advancing.'}
                     {selected.status === "blocked" &&
-                      `Blocked at Gate ${selected.currentGate + 1} (${GATES[selected.currentGate]?.name}). Exit criteria incomplete — cannot advance. Immediate action: identify the blocking dependency, assign an owner, and set a resolution deadline. Escalate to the implementation steering committee if not resolved within 5 business days.`}
+                      'Blocked at Gate ' + selected.currentGate + 1 + ' (' + GATES[selected.currentGate]?.name + '). Exit criteria incomplete — cannot advance. Immediate action: identify the blocking dependency, assign an owner, and set a resolution deadline. Escalate to the implementation steering committee if not resolved within 5 business days.'}
                   </div>
                 </div>
               </>
