@@ -17,7 +17,7 @@
   --shadow:0 1px 2px rgba(13,27,42,.05), 0 10px 30px rgba(13,27,42,.06);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;scroll-padding-top:110px;-webkit-text-size-adjust:100%}
+html{scroll-behavior:smooth;scroll-padding-top:75px;-webkit-text-size-adjust:100%}
 body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
 a{color:inherit}img{max-width:100%;display:block}
 .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
@@ -586,14 +586,23 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
     var id = a.getAttribute('href').replace('#','');
     if (id) sectionIds.push({ id: id, el: document.getElementById(id), a: a });
   });
+  var ticking = false;
   function updateActive(){
-    var scrollY = window.scrollY + 120;
+    var navH = document.querySelector('.nav').offsetHeight;
+    var scrollY = window.scrollY + navH + 20;
     var current = null;
     sectionIds.forEach(function(s){ if (s.el && s.el.offsetTop <= scrollY) current = s; });
     navAs.forEach(function(a){ a.classList.remove('active'); });
     if (current) current.a.classList.add('active');
+    ticking = false;
   }
-  window.addEventListener('scroll', updateActive, { passive: true });
+  function onScroll(){
+    if (!ticking) {
+      window.requestAnimationFrame(updateActive);
+      ticking = true;
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
   updateActive();
 
 })();
