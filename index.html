@@ -7,42 +7,43 @@
 <meta name="description" content="PMP-certified relationship management professional with 9+ years across transportation and logistics — supplier governance, business reviews, contract compliance, escalation management, and third-party risk.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --deep:#0D1B2A;
-  --deep-2:#1B2D45;
-  --paper:#EDF1F5;
-  --panel:#FFFFFF;
-  --ink:#0D1B2A;
-  --sub:#5A6B7D;
-  --sub-dark:#9DB0C4;
-  --hair:#D5DCE5;
-  --hair-dark:rgba(255,255,255,.14);
-  --accent:#D4A843;
-  --accent-2:#E0BC6A;
-  --accent-soft:#F5EDD8;
-  --ok:#15803D;
-  --amber:#B45309;
-  --max:1120px;
+  --deep:#0D1B2A;--deep-2:#1B2D45;--paper:#EDF1F5;--panel:#FFFFFF;--ink:#0D1B2A;
+  --sub:#5A6B7D;--sub-dark:#9DB0C4;--hair:#D5DCE5;--hair-dark:rgba(255,255,255,.14);
+  --accent:#D4A843;--accent-2:#E0BC6A;--accent-soft:#F5EDD8;
+  --ok:#15803D;--amber:#B45309;--max:1120px;
   --shadow:0 1px 2px rgba(13,27,42,.05), 0 10px 30px rgba(13,27,42,.06);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;scroll-padding-top:72px;-webkit-text-size-adjust:100%}
+html{scroll-behavior:smooth;scroll-padding-top:110px;-webkit-text-size-adjust:100%}
 body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
-a{color:inherit}
-img{max-width:100%;display:block}
+a{color:inherit}img{max-width:100%;display:block}
 .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
-.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 h1,h2,h3{font-family:'Archivo',sans-serif;letter-spacing:-.025em;line-height:1.12}
-.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
-.eyebrow.on-dark{color:var(--accent-2)}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-2)}
 .sec-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--sub);margin-bottom:10px}
 h2.sec{font-size:clamp(26px,3.4vw,36px);font-weight:700;margin-bottom:14px}
 .sec-intro{color:var(--sub);max-width:60ch;font-size:15.5px}
 
+/* STICKY ACTION BAR */
+.action-bar{position:sticky;top:0;z-index:70;background:var(--deep);border-bottom:1px solid rgba(212,168,67,.15);padding:8px 0}
+.action-bar-in{max-width:var(--max);margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.action-bar-in a{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#D4A843;text-decoration:none;padding:6px 14px;border-radius:999px;border:1px solid rgba(212,168,67,.25);transition:all .18s;white-space:nowrap}
+.action-bar-in a:hover{background:rgba(212,168,67,.12);border-color:#D4A843;box-shadow:0 0 0 1px #D4A843}
+.action-bar-in .sep{width:1px;height:16px;background:rgba(255,255,255,.1);flex-shrink:0}
+@media(max-width:700px){.action-bar-in a span.desk{display:none}}
+
+/* ROLE TOGGLE */
+.role-toggle{display:flex;align-items:center;gap:0;margin-left:auto;border-radius:999px;border:1px solid rgba(255,255,255,.12);overflow:hidden}
+.role-toggle button{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;padding:6px 14px;border:none;cursor:pointer;transition:all .18s;white-space:nowrap;letter-spacing:.03em}
+.role-toggle button.active{background:#D4A843;color:var(--deep)}
+.role-toggle button:not(.active){background:transparent;color:var(--sub-dark)}
+.role-toggle button:not(.active):hover{color:#D4A843}
+
 /* NAV */
-.nav{position:sticky;top:0;z-index:60;background:rgba(13,27,42,.95);backdrop-filter:saturate(160%) blur(12px);border-bottom:1px solid rgba(255,255,255,.08)}
+.nav{position:sticky;top:37px;z-index:60;background:rgba(13,27,42,.95);backdrop-filter:saturate(160%) blur(12px);border-bottom:1px solid rgba(255,255,255,.08)}
 .nav-in{max-width:var(--max);margin:0 auto;padding:11px 24px;display:flex;align-items:center;gap:18px}
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none}
 .mark{font-family:'Archivo',sans-serif;font-weight:800;font-size:40px;color:#D4A843;letter-spacing:-.03em;flex-shrink:0;line-height:1;text-transform:uppercase}
@@ -50,9 +51,9 @@ h2.sec{font-size:clamp(26px,3.4vw,36px);font-weight:700;margin-bottom:14px}
 .brand span{font-size:13px;color:var(--sub-dark);display:block;line-height:1.3}
 .nav-links{margin-left:auto;display:flex;gap:20px}
 .nav-links a{font-size:13.5px;color:var(--sub-dark);text-decoration:none;padding:3px 0;border-bottom:1.5px solid transparent;transition:color .18s,border-color .18s}
-.nav-links a:hover,.nav-links a:focus-visible,.nav-links a.active{color:#fff;border-bottom-color:var(--accent)}
+.nav-links a:hover,.nav-links a:focus-visible,.nav-links a.active{color:#fff;border-bottom-color:#D4A843}
 .nav-cta{display:flex;gap:9px}
-.btn{display:inline-flex;align-items:center;gap:7px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;padding:9px 16px;transition:transform .18s,opacity .18s,background .18s,border-color .18s;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:7px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;padding:9px 16px;transition:all .18s;white-space:nowrap;border:none;cursor:pointer}
 .btn:hover{transform:translateY(-1px)}
 .btn-ghost{border:1px solid rgba(255,255,255,.15);color:#fff;background:transparent}
 .btn-ghost:hover{border-color:#D4A843;color:#D4A843;box-shadow:0 0 0 1px #D4A843}
@@ -72,10 +73,8 @@ h2.sec{font-size:clamp(26px,3.4vw,36px);font-weight:700;margin-bottom:14px}
 .hero p.sub{margin-top:20px;color:var(--sub-dark);font-size:16px;max-width:56ch}
 .hero-btns{margin-top:28px;display:flex;flex-wrap:wrap;gap:10px}
 .chips{margin-top:32px;display:flex;flex-wrap:wrap;gap:8px;padding-bottom:44px}
-.chip{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.04em;padding:6px 12px;border-radius:999px;border:1px solid var(--hair-dark);color:#D6E2ED;text-decoration:none;transition:border-color .18s,background .18s,box-shadow .18s}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.04em;padding:6px 12px;border-radius:999px;border:1px solid var(--hair-dark);color:#D6E2ED;text-decoration:none;transition:all .18s}
 a.chip:hover,a.chip:focus-visible{border-color:#D4A843;color:#D4A843;background:rgba(212,168,67,.12);box-shadow:0 0 0 1px #D4A843}
-
-/* Photo — Vishesh-style */
 .hero-photo{justify-self:center}
 .hero-photo img{width:280px;height:340px;object-fit:cover;object-position:center 15%;border-radius:20px;border:2px solid rgba(212,168,67,.2);box-shadow:0 8px 32px rgba(0,0,0,.3)}
 @media(max-width:940px){.hero-photo img{width:220px;height:270px}}
@@ -85,8 +84,7 @@ a.chip:hover,a.chip:focus-visible{border-color:#D4A843;color:#D4A843;background:
 .stats-in{max-width:var(--max);margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(4,1fr)}
 @media(max-width:820px){.stats-in{grid-template-columns:repeat(2,1fr)}}
 .stat{padding:30px 22px 30px 0}
-.stat:last-child{}
-@media(max-width:820px){.stat{padding-right:12px}.stat:nth-last-child(-n+2){}}
+@media(max-width:820px){.stat{padding-right:12px}}
 .stat .v{font-family:'Archivo',sans-serif;font-weight:700;font-size:34px;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#D4A843}
 .stat .k{font-size:12.5px;color:var(--sub-dark);margin-top:4px;line-height:1.4}
 
@@ -99,32 +97,34 @@ section{padding:82px 0}
 @media(max-width:980px){.cap-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.cap-grid{grid-template-columns:1fr}}
 .cap{background:var(--panel);border:1px solid var(--hair);border-radius:14px;padding:26px 22px;box-shadow:var(--shadow);transition:transform .2s,border-color .2s}
-.cap:hover{transform:translateY(-3px);border-color:var(--accent)}
-.cap .glyph{width:40px;height:40px;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:17px;margin-bottom:16px}
+.cap:hover{transform:translateY(-3px);border-color:#D4A843}
+.cap .glyph{width:40px;height:40px;border-radius:11px;background:var(--accent-soft);color:#D4A843;display:grid;place-items:center;font-size:17px;margin-bottom:16px}
 .cap h3{font-size:17px;font-weight:600;margin-bottom:9px}
 .cap p{font-size:13.8px;color:var(--sub);line-height:1.6}
 
 /* PROJECTS */
 .filters{margin-top:28px;display:flex;flex-wrap:wrap;gap:8px}
 .filter{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;padding:8px 15px;border-radius:999px;border:1px solid var(--hair);background:var(--panel);color:var(--sub);cursor:pointer;transition:all .18s}
-.filter:hover{border-color:var(--accent);color:var(--ink)}
-.filter[aria-pressed="true"]{background:var(--deep);border-color:var(--accent);color:var(--accent)}
+.filter:hover{border-color:#D4A843;color:var(--ink)}
+.filter[aria-pressed="true"]{background:var(--deep);border-color:#D4A843;color:#D4A843}
 .proj-list{margin-top:26px;display:grid;gap:18px}
-.proj{background:var(--panel);border:1px solid var(--hair);border-radius:16px;padding:30px 32px;box-shadow:var(--shadow);transition:transform .2s,border-color .2s,opacity .25s}
-.proj:hover{transform:translateY(-3px);border-color:var(--accent)}
+.proj{background:var(--panel);border:1px solid var(--hair);border-radius:16px;padding:30px 32px;box-shadow:var(--shadow);transition:transform .2s,border-color .2s}
+.proj:hover{transform:translateY(-3px);border-color:#D4A843}
 .proj.hide{display:none}
 .proj-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
 .client{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
-.tag{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:5px;background:var(--accent-soft);color:var(--accent)}
+.tag{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:5px;background:var(--accent-soft);color:#D4A843}
 .proj h3{font-size:21px;font-weight:600;margin-bottom:11px}
 .proj > p{font-size:14.8px;color:var(--sub);max-width:76ch}
 .proj ul{margin-top:18px;display:grid;gap:8px}
 .proj li{list-style:none;display:grid;grid-template-columns:15px 1fr;gap:11px;font-size:14px;line-height:1.55}
-.proj li::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--accent);margin-top:8px}
+.proj li::before{content:"";width:6px;height:6px;border-radius:2px;background:#D4A843;margin-top:8px}
 .proj-foot{margin-top:20px;padding-top:16px;border-top:1px solid var(--hair);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .stack{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sub);border:1px solid var(--hair);border-radius:5px;padding:3px 8px}
-.live{margin-left:auto;font-size:13.5px;font-weight:600;color:var(--accent);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .18s}
-.live:hover,.live:focus-visible{border-bottom-color:var(--accent)}
+.live{margin-left:auto;font-size:13.5px;font-weight:600;color:#D4A843;text-decoration:none;border-bottom:1px solid transparent;transition:border-color .18s}
+.live:hover,.live:focus-visible{border-bottom-color:#D4A843}
+.impact{margin-top:14px;padding:12px 16px;border-radius:10px;background:#F8F5EE;border-left:3px solid #D4A843;font-size:13.5px;color:var(--ink);line-height:1.55}
+.impact b{color:#D4A843;font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px}
 
 /* ABOUT */
 .about-grid{display:grid;grid-template-columns:300px 1fr;gap:52px;align-items:start}
@@ -134,12 +134,12 @@ section{padding:82px 0}
 .about-card .nm{font-family:'Archivo',sans-serif;font-weight:600;font-size:17px}
 .about-card .rl{font-size:12.5px;color:var(--sub-dark);margin-top:4px}
 .about-card .creds{margin-top:18px;display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
-.about-card .cred{font-size:11px;font-weight:500;padding:5px 11px;border-radius:999px;border:1px solid var(--hair-dark);color:var(--sub-dark);text-decoration:none;transition:border-color .18s}
-a.cred:hover{border-color:var(--accent-2);color:var(--accent-2)}
+.about-card .cred{font-size:11px;font-weight:500;padding:5px 11px;border-radius:999px;border:1px solid var(--hair-dark);color:var(--sub-dark);text-decoration:none;transition:all .18s}
+a.cred:hover{border-color:#D4A843;color:#D4A843;box-shadow:0 0 0 1px #D4A843}
 .skills{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
 @media(max-width:600px){.skills{grid-template-columns:1fr}}
 .skills li{list-style:none;font-size:14px;padding-left:16px;position:relative;color:var(--ink)}
-.skills li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.skills li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:50%;background:#D4A843}
 .edu{margin-top:26px;padding-top:20px;border-top:1px solid var(--hair);font-size:14px;color:var(--sub)}
 .edu b{color:var(--ink);font-weight:600}
 
@@ -152,15 +152,15 @@ a.cred:hover{border-color:var(--accent-2);color:var(--accent-2)}
 .xp .scope{font-size:14.5px;color:var(--sub);margin-top:8px}
 .xp ul{margin-top:15px;display:grid;gap:9px}
 .xp li{list-style:none;display:grid;grid-template-columns:14px 1fr;gap:11px;font-size:14.3px;line-height:1.58}
-.xp li::before{content:"";width:6px;height:1.5px;background:var(--accent);margin-top:11px}
+.xp li::before{content:"";width:6px;height:1.5px;background:#D4A843;margin-top:11px}
 
 /* CERTIFICATIONS */
 .cert{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;background:var(--panel);border:1px solid var(--hair);border-radius:14px;padding:20px 24px;margin-top:12px;transition:transform .2s,border-color .2s}
-.cert:hover{transform:translateY(-2px);border-color:var(--accent)}
+.cert:hover{transform:translateY(-2px);border-color:#D4A843}
 .cert-nm{font-family:'Archivo',sans-serif;font-weight:600;font-size:16.5px}
 .cert-is{font-size:13px;color:var(--sub);margin-top:3px}
-.verify{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:var(--deep);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.04em;padding:9px 15px;border-radius:999px;white-space:nowrap;transition:opacity .18s}
-.verify:hover,.verify:focus-visible{opacity:.9}
+.verify{display:inline-flex;align-items:center;gap:7px;background:#D4A843;color:var(--deep);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.04em;padding:9px 15px;border-radius:999px;white-space:nowrap;transition:opacity .18s}
+.verify:hover,.verify:focus-visible{opacity:.9;box-shadow:0 0 0 2px rgba(212,168,67,.4)}
 .verify svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2}
 .onreq{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--sub);border:1px dashed var(--hair);border-radius:999px;padding:8px 14px;white-space:nowrap}
 
@@ -169,19 +169,34 @@ a.cred:hover{border-color:var(--accent-2);color:var(--accent-2)}
 .contact h2{font-size:clamp(26px,3.4vw,38px);font-weight:700;margin-top:12px}
 .contact p{color:var(--sub-dark);margin-top:16px;max-width:56ch;font-size:15.5px}
 .c-links{margin-top:30px;display:flex;flex-wrap:wrap;gap:11px}
-.c-links a{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--hair-dark);border-radius:999px;padding:12px 20px;text-decoration:none;font-size:14.5px;transition:background .18s,border-color .18s}
-.c-links a:hover,.c-links a:focus-visible{background:rgba(255,255,255,.08);border-color:var(--accent-2)}
+.c-links a{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--hair-dark);border-radius:999px;padding:12px 20px;text-decoration:none;font-size:14.5px;transition:all .18s}
+.c-links a:hover,.c-links a:focus-visible{background:rgba(255,255,255,.08);border-color:#D4A843;color:#D4A843;box-shadow:0 0 0 1px #D4A843}
 .loc{margin-top:26px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--sub-dark)}
 footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px 0 40px;color:var(--sub-dark)}
 .foot-in{max-width:var(--max);margin:0 auto;padding:0 24px;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11.5px}
 
-:focus-visible{outline:2px solid var(--accent-2);outline-offset:3px;border-radius:4px}
+:focus-visible{outline:2px solid #D4A843;outline-offset:3px;border-radius:4px}
 .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
 .reveal.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{transition:none!important;opacity:1!important;transform:none!important}}
 </style>
 </head>
 <body id="top">
+
+<!-- STICKY ACTION BAR -->
+<div class="action-bar">
+  <div class="action-bar-in">
+    <a href="mailto:vaibhavvasishth@gmail.com">✉ <span class="desk">Email</span></a>
+    <a href="https://www.linkedin.com/in/vaibhavvasishth-pmp" target="_blank" rel="noopener noreferrer">in <span class="desk">LinkedIn</span></a>
+    <a href="tel:+16479171786">☏ <span class="desk">Call</span></a>
+    <span class="sep"></span>
+    <a href="https://www.credly.com/badges/0f325ac4-e65f-42a2-98cd-3b52683b89c8/public_url" target="_blank" rel="noopener noreferrer">PMP ↗ Verify</a>
+    <div class="role-toggle">
+      <button class="active" onclick="setTrack('srm')">Supplier Governance</button>
+      <button onclick="setTrack('spt')">Supply Planning &amp; Transport</button>
+    </div>
+  </div>
+</div>
 
 <!-- NAV -->
 <nav class="nav">
@@ -210,18 +225,18 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <div class="eyebrow on-dark">Governance · Scorecards · Root Cause</div>
-      <h1>Enterprise Supplier Relationships, Governed End to End</h1>
-      <p class="sub">PMP-certified relationship management professional with 9+ years in transportation and logistics — owning multi-year B2B partnerships from contract execution and governance routines through business reviews, escalations, and renewal. Portfolios up to $10M, 100% retention, and a scorecard leadership uses as the single source for portfolio health and risk.</p>
+      <div class="eyebrow" data-srm="Governance · Scorecards · Root Cause" data-spt="Supply Planning · Transportation · Operations">Governance · Scorecards · Root Cause</div>
+      <h1 data-srm="Enterprise Supplier Relationships, Governed End to End" data-spt="End-to-End Supply Chain Operations, Planned and Delivered">Enterprise Supplier Relationships, Governed End to End</h1>
+      <p class="sub" data-srm="PMP-certified relationship management professional with 9+ years in transportation and logistics — owning multi-year B2B partnerships from contract execution and governance routines through business reviews, escalations, and renewal. Portfolios up to $10M, 100% retention, and a scorecard leadership uses as the single source for portfolio health and risk." data-spt="PMP-certified operations professional with 9+ years in transportation and logistics — managing supply planning, fleet operations, carrier coordination, and delivery performance across networks of 115+ trucks and $10M+ in enterprise accounts. 100% retention, 20% cycle-time reduction, and KPI structures built from scratch.">PMP-certified relationship management professional with 9+ years in transportation and logistics — owning multi-year B2B partnerships from contract execution and governance routines through business reviews, escalations, and renewal. Portfolios up to $10M, 100% retention, and a scorecard leadership uses as the single source for portfolio health and risk.</p>
       <div class="hero-btns">
         <a class="btn btn-solid" href="#projects">View projects</a>
         <a class="btn btn-onDark" href="#contact">Get in touch</a>
       </div>
       <div class="chips">
         <a class="chip" href="https://www.credly.com/badges/0f325ac4-e65f-42a2-98cd-3b52683b89c8/public_url" target="_blank" rel="noopener noreferrer">PMP ↗ verify</a>
-        <span class="chip">Supplier Governance</span>
-        <span class="chip">Third-Party Risk</span>
-        <span class="chip">Power BI · Salesforce</span>
+        <span class="chip" data-srm="Supplier Governance" data-spt="Supply Planning">Supplier Governance</span>
+        <span class="chip" data-srm="Third-Party Risk" data-spt="Transportation Management">Third-Party Risk</span>
+        <span class="chip" data-srm="Power BI · Salesforce" data-spt="Power BI · Excel · Fleet Systems">Power BI · Salesforce</span>
         <span class="chip">Toronto, ON</span>
       </div>
     </div>
@@ -234,10 +249,10 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
 <!-- STATS -->
 <div class="stats">
   <div class="stats-in">
-    <div class="stat"><div class="v" data-count="9" data-suffix="+">0</div><div class="k">Years in transportation &amp; logistics</div></div>
-    <div class="stat"><div class="v" data-count="22" data-suffix="+">0</div><div class="k">Enterprise relationships governed</div></div>
-    <div class="stat"><div class="v" data-count="15" data-prefix="$" data-suffix="M+">0</div><div class="k">Combined portfolio value owned</div></div>
-    <div class="stat"><div class="v" data-count="100" data-suffix="%">0</div><div class="k">Retention over 3+ consecutive years</div></div>
+    <div class="stat"><div class="v" data-count="9" data-suffix="+">9+</div><div class="k">Years in transportation &amp; logistics</div></div>
+    <div class="stat"><div class="v" data-count="22" data-suffix="+">22+</div><div class="k">Enterprise relationships governed</div></div>
+    <div class="stat"><div class="v" data-count="15" data-prefix="$" data-suffix="M+">$15M+</div><div class="k">Combined portfolio value owned</div></div>
+    <div class="stat"><div class="v" data-count="100" data-suffix="%">100%</div><div class="k">Retention over 3+ consecutive years</div></div>
   </div>
 </div>
 
@@ -249,26 +264,10 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
       <h2 class="sec">Core capabilities</h2>
     </div>
     <div class="cap-grid">
-      <div class="cap reveal">
-        <div class="glyph">◈</div>
-        <h3>Supplier &amp; Relationship Governance</h3>
-        <p>Governance forums, monthly and quarterly business reviews with executives, documented relationship plans, and renewal planning across portfolios of up to 15 enterprise partnerships.</p>
-      </div>
-      <div class="cap reveal">
-        <div class="glyph">✦</div>
-        <h3>Scorecards &amp; Performance Reporting</h3>
-        <p>Replaced manual status reporting with a Power BI relationship-health scorecard on Salesforce data — leadership's single view of service KPIs, financials, and risk.</p>
-      </div>
-      <div class="cap reveal">
-        <div class="glyph">◎</div>
-        <h3>Contract Compliance &amp; Sourcing</h3>
-        <p>Contract governance from deal approval through invoicing closure, 30+ annual compliance packages, and 80+ RFI/RFQ responses supporting procurement and strategic sourcing.</p>
-      </div>
-      <div class="cap reveal">
-        <div class="glyph">▦</div>
-        <h3>Escalation &amp; Root-Cause Analysis</h3>
-        <p>Escalation lead on complex service failures, convening cross-functional teams on corrective action plans — including a 20% reduction in operational turnaround time.</p>
-      </div>
+      <div class="cap reveal"><div class="glyph">◈</div><h3>Supplier &amp; Relationship Governance</h3><p>Governance forums, monthly and quarterly business reviews with executives, documented relationship plans, and renewal planning across portfolios of up to 15 enterprise partnerships.</p></div>
+      <div class="cap reveal"><div class="glyph">✦</div><h3>Scorecards &amp; Performance Reporting</h3><p>Replaced manual status reporting with a Power BI relationship-health scorecard on Salesforce data — leadership's single view of service KPIs, financials, and risk.</p></div>
+      <div class="cap reveal"><div class="glyph">◎</div><h3>Contract Compliance &amp; Sourcing</h3><p>Contract governance from deal approval through invoicing closure, 30+ annual compliance packages, and 80+ RFI/RFQ responses supporting procurement and strategic sourcing.</p></div>
+      <div class="cap reveal"><div class="glyph">▦</div><h3>Escalation &amp; Root-Cause Analysis</h3><p>Escalation lead on complex service failures, convening cross-functional teams on corrective action plans — including a 20% reduction in operational turnaround time.</p></div>
     </div>
   </div>
 </section>
@@ -279,32 +278,28 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
     <div class="reveal">
       <div class="sec-label">Selected work</div>
       <h2 class="sec">Key projects</h2>
-      <p class="sec-intro">Working applications built to run the analysis these roles require — cycle-time investigation, portfolio governance, third-party risk assessment, and phase-gated implementation tracking. All run on synthetic datasets modelled on real operating conditions; no client data is published.</p>
+      <p class="sec-intro">Working applications built to run the analysis these roles require. All run on synthetic datasets modelled on real operating conditions; no client data is published.</p>
     </div>
-
-    <div class="filters reveal" role="group" aria-label="Filter projects">
+    <div class="filters reveal" role="group">
       <button class="filter" data-filter="all" aria-pressed="true">All</button>
       <button class="filter" data-filter="analytics" aria-pressed="false">Analytics</button>
       <button class="filter" data-filter="governance" aria-pressed="false">Governance</button>
       <button class="filter" data-filter="risk" aria-pressed="false">Risk</button>
       <button class="filter" data-filter="pm" aria-pressed="false">Project Management</button>
     </div>
-
     <div class="proj-list">
 
       <article class="proj reveal" data-cat="analytics">
-        <div class="proj-meta">
-          <span class="client">Personal build · Operations Analytics</span>
-          <span class="tag">Analytics</span>
-        </div>
-        <h3>Delivery Turnaround Analyzer</h3>
-        <p>Decomposes 720 shipments into seven process stages to isolate where order-to-invoice time is lost, attributes every SLA breach to a root cause, and measures the effect of a cross-functional workflow redesign. Built after leading the real version of this analysis, which cut operational turnaround time by 20%.</p>
+        <div class="proj-meta"><span class="client">Personal build · Operations Analytics</span><span class="tag">Analytics</span></div>
+        <h3 data-srm="Delivery Turnaround Analyzer" data-spt="E2E Supply Chain Cycle Time &amp; Inventory Freshness Analyzer">Delivery Turnaround Analyzer</h3>
+        <p data-srm="Decomposes 720 shipments into seven process stages to isolate where order-to-invoice time is lost, attributes every SLA breach to a root cause, and measures the effect of a cross-functional workflow redesign." data-spt="Decomposes 720 shipments across the end-to-end supply chain — from order receipt through warehouse processing, carrier assignment, and final delivery — to isolate where cycle time is lost and where inventory freshness is at risk.">Decomposes 720 shipments into seven process stages to isolate where order-to-invoice time is lost, attributes every SLA breach to a root cause, and measures the effect of a cross-functional workflow redesign.</p>
         <ul>
           <li>Stage-level cycle-time decomposition across intake, documentation, planning, carrier assignment, dwell, line haul, and invoice closure</li>
           <li>Root-cause attribution to the stage with the largest excess over its own baseline — not simply the longest stage</li>
           <li>Pareto analysis separating the vital few causes from the trivial many</li>
           <li>Before-and-after measurement with the go-live month excluded as a ramp period</li>
         </ul>
+        <div class="impact"><b>Business impact</b>Any operations team that moves physical goods — logistics, manufacturing, retail, FMCG — uses this to find which step in the delivery chain is causing delays, attribute every missed commitment to a specific root cause, and measure whether a process change actually improved performance or just shifted the bottleneck.</div>
         <div class="proj-foot">
           <span class="stack">Web Application</span><span class="stack">Data Visualization</span><span class="stack">Pareto Analysis</span><span class="stack">Root-Cause Analysis</span><span class="stack">Process Improvement</span>
           <a class="live" href="turnaround.html" target="_blank" rel="noopener noreferrer">View live →</a>
@@ -312,18 +307,16 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
       </article>
 
       <article class="proj reveal" data-cat="governance">
-        <div class="proj-meta">
-          <span class="client">Personal build · Portfolio Governance</span>
-          <span class="tag">Governance</span>
-        </div>
-        <h3>Portfolio Governance &amp; QBR Pack Generator</h3>
-        <p>Revenue variance decomposition, margin trend analysis, and a generated quarterly business review pack across 12 enterprise accounts and 20 months of synthetic data. Change the quarter and the entire pack — executive summary, account table, variance drivers, watchlist with actions — rewrites itself.</p>
+        <div class="proj-meta"><span class="client">Personal build · Portfolio Governance</span><span class="tag">Governance</span></div>
+        <h3 data-srm="Portfolio Governance &amp; QBR Pack Generator" data-spt="Supply Plan &amp; Deployment Plan Variance Analyzer">Portfolio Governance &amp; QBR Pack Generator</h3>
+        <p data-srm="Revenue variance decomposition, margin trend analysis, and a generated quarterly business review pack across 12 enterprise accounts and 20 months of synthetic data. Change the quarter and the entire pack rewrites itself." data-spt="Variance analysis across 12 supply plans and 20 months of data — decomposing planned vs actual volume and yield to isolate whether a gap is a demand planning miss, a deployment failure, or a rate change. Change the period and the entire analysis rewrites.">Revenue variance decomposition, margin trend analysis, and a generated quarterly business review pack across 12 enterprise accounts and 20 months of synthetic data. Change the quarter and the entire pack rewrites itself.</p>
         <ul>
           <li>Exact variance decomposition: volume effect + yield effect ≡ total variance — verified programmatically</li>
           <li>Margin erosion detection via trailing-6-month OLS regression (slope ≤ −18 bps/month, R² ≥ 0.45)</li>
           <li>Watchlist with derived flags that evolve across quarters — e.g. "growth at declining margin"</li>
           <li>A printable QBR deliverable: executive summary in generated prose, variance chart, and watchlist with actions</li>
         </ul>
+        <div class="impact"><b>Business impact</b>Any team running a portfolio of accounts, suppliers, or business units uses this to separate volume misses from rate changes in a single view, detect margin erosion before it becomes a P&amp;L problem, and generate a review-ready pack that tells leadership exactly where to intervene and why.</div>
         <div class="proj-foot">
           <span class="stack">Web Application</span><span class="stack">Statistical Analysis</span><span class="stack">OLS Regression</span><span class="stack">Variance Decomposition</span><span class="stack">PDF Export</span>
           <a class="live" href="qbr.html" target="_blank" rel="noopener noreferrer">View live →</a>
@@ -331,10 +324,7 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
       </article>
 
       <article class="proj reveal" data-cat="risk">
-        <div class="proj-meta">
-          <span class="client">Personal build · Third-Party Risk</span>
-          <span class="tag">Risk</span>
-        </div>
+        <div class="proj-meta"><span class="client">Personal build · Third-Party Risk</span><span class="tag">Risk</span></div>
         <h3>Third-Party Risk Assessment</h3>
         <p>Tiers vendors by inherent risk across five domains against business criticality, producing the assessment record and proportionate due-diligence requirement a bank's risk function expects on file.</p>
         <ul>
@@ -343,6 +333,7 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
           <li>Free-text notes parsed for risk signals — expired certifications, single-source dependency, audit findings</li>
           <li>Each tier mapped to a defined due-diligence requirement, from baseline checks to enhanced review with executive sign-off</li>
         </ul>
+        <div class="impact"><b>Business impact</b>Any organization that depends on outside vendors — financial services, healthcare, telecom, government, retail — uses this to tier every supplier by risk, assign proportionate oversight, and flag concentration or compliance gaps before they become service failures or regulatory findings.</div>
         <div class="proj-foot">
           <span class="stack">Web Application</span><span class="stack">TPRM Framework</span><span class="stack">Risk Tiering</span><span class="stack">Due Diligence</span><span class="stack">Text Analysis</span>
           <a class="live" href="tprm.html" target="_blank" rel="noopener noreferrer">View live →</a>
@@ -350,18 +341,16 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
       </article>
 
       <article class="proj reveal" data-cat="pm">
-        <div class="proj-meta">
-          <span class="client">Personal build · Project Management</span>
-          <span class="tag">PM</span>
-        </div>
+        <div class="proj-meta"><span class="client">Personal build · Project Management</span><span class="tag">PM</span></div>
         <h3>Implementation Gate Tracker</h3>
-        <p>Fourteen concurrent customer implementations tracked through a four-gate phase framework — Kickoff, Requirements, Configuration, Go-Live — with schedule variance, gate exit criteria, and a milestone burn-down chart. Built after standardizing onboarding into a phase-gated framework at Challenger and delivering 40+ implementation projects at Charger.</p>
+        <p>Fourteen concurrent customer implementations tracked through a four-gate phase framework — Kickoff, Requirements, Configuration, Go-Live — with schedule variance, gate exit criteria, and a milestone burn-down chart.</p>
         <ul>
           <li>Phase-gate methodology with defined entry/exit criteria per gate — a gate cannot advance until its criteria are met</li>
           <li>Schedule variance (SV) calculated per gate and cumulatively, with projects ranked by slippage</li>
-          <li>Milestone burn-down: planned baseline vs actual gate completions over time — the gap is portfolio-level schedule slippage</li>
-          <li>Gate detail view with criteria checklists and contextual assessment — blocked projects get escalation recommendations, at-risk projects get scope/resource review</li>
+          <li>Milestone burn-down: planned baseline vs actual gate completions over time</li>
+          <li>Gate detail view with criteria checklists and contextual assessment</li>
         </ul>
+        <div class="impact"><b>Business impact</b>Any team running multiple concurrent implementations — customer onboarding, system rollouts, site launches, technology deployments — uses this to govern them at portfolio level, spot which projects are slipping before they miss go-live, and ensure gate criteria are met before advancing rather than discovered after.</div>
         <div class="proj-foot">
           <span class="stack">Web Application</span><span class="stack">Data Visualization</span><span class="stack">Phase-Gate Methodology</span><span class="stack">Schedule Variance</span><span class="stack">Milestone Tracking</span>
           <a class="live" href="gates.html" target="_blank" rel="noopener noreferrer">View live →</a>
@@ -403,9 +392,7 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
         <li>Salesforce CRM · Power BI · Advanced Excel</li>
         <li>Microsoft Project · Smartsheet · SharePoint</li>
       </ul>
-      <div class="edu">
-        <b>Education:</b> Post Graduate Diploma — Project Management · Post Graduate Diploma — Construction Management
-      </div>
+      <div class="edu"><b>Education:</b> Post Graduate Diploma — Project Management · Post Graduate Diploma — Construction Management</div>
     </div>
   </div>
 </section>
@@ -413,62 +400,26 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
 <!-- EXPERIENCE -->
 <section id="experience" class="section-alt">
   <div class="wrap">
-    <div class="reveal">
-      <div class="sec-label">Career</div>
-      <h2 class="sec">Experience</h2>
-    </div>
-
+    <div class="reveal"><div class="sec-label">Career</div><h2 class="sec">Experience</h2></div>
     <div class="xp reveal">
       <div class="xp-when"><b>2025 — Present</b>Cambridge, ON</div>
-      <div>
-        <h3>Sales Account Manager · Challenger Motor Freight</h3>
-        <div class="scope">Accountable for relationship health, revenue, cost, and service performance across 12 enterprise partnerships ($7M portfolio).</div>
-        <ul>
-          <li>Lead governance forums and quarterly business reviews with executives, covering SLA performance, financial results, volume trends, and joint improvement plans.</li>
-          <li>Built a relationship-health scorecard in Power BI on Salesforce data, replacing manual status reports with one real-time view of service KPIs, financials, and risk.</li>
-          <li>Prepare contract setup and compliance documentation for 30+ annual RFIs with Sales and Finance.</li>
-          <li>Standardized onboarding into a phase-gated framework — kickoff, requirements, configuration, go-live — now used across all 12 relationships.</li>
-        </ul>
-      </div>
+      <div><h3>Sales Account Manager · Challenger Motor Freight</h3><div class="scope">Accountable for relationship health, revenue, cost, and service performance across 12 enterprise partnerships ($7M portfolio).</div>
+        <ul><li>Lead governance forums and quarterly business reviews with executives, covering SLA performance, financial results, volume trends, and joint improvement plans.</li><li>Built a relationship-health scorecard in Power BI on Salesforce data, replacing manual status reports with one real-time view of service KPIs, financials, and risk.</li><li>Prepare contract setup and compliance documentation for 30+ annual RFIs with Sales and Finance.</li><li>Standardized onboarding into a phase-gated framework — kickoff, requirements, configuration, go-live — now used across all 12 relationships.</li></ul></div>
     </div>
-
     <div class="xp reveal">
       <div class="xp-when"><b>2022 — 2025</b>Brampton, ON</div>
-      <div>
-        <h3>Account Manager, Client Relations · Charger Logistics</h3>
-        <div class="scope">Sole owner of 15 enterprise relationships ($8–10M) from contract execution through daily delivery and renewal.</div>
-        <ul>
-          <li>Delivered 100% retention over three years as single point of contact, through recurring executive check-ins, documented relationship plans, and SOPs.</li>
-          <li>Cut operational turnaround time 20% by tracing recurring delivery delays to root cause through pivot-table analysis and redesigning the cross-functional workflow.</li>
-          <li>Acted as escalation lead on complex service failures, convening Sales, Pricing, Operations, and Customer Service on corrective action plans.</li>
-          <li>Directed 50+ RFI/RFQ responses and delivered 40+ implementation projects against milestone plans.</li>
-        </ul>
-      </div>
+      <div><h3>Account Manager, Client Relations · Charger Logistics</h3><div class="scope">Sole owner of 15 enterprise relationships ($8–10M) from contract execution through daily delivery and renewal.</div>
+        <ul><li>Delivered 100% retention over three years as single point of contact, through recurring executive check-ins, documented relationship plans, and SOPs.</li><li>Cut operational turnaround time 20% by tracing recurring delivery delays to root cause through pivot-table analysis and redesigning the cross-functional workflow.</li><li>Acted as escalation lead on complex service failures, convening Sales, Pricing, Operations, and Customer Service on corrective action plans.</li><li>Directed 50+ RFI/RFQ responses and delivered 40+ implementation projects against milestone plans.</li></ul></div>
     </div>
-
     <div class="xp reveal">
       <div class="xp-when"><b>2020 — 2022</b>Mississauga, ON</div>
-      <div>
-        <h3>Operations &amp; Delivery Manager · I-Way Transport</h3>
-        <div class="scope">Managed day-to-day operations of a 115+ truck fleet, including carrier and vendor coordination with daily SLA accountability.</div>
-        <ul>
-          <li>Directed dispatch, load planning, and carrier coordination across the fleet, meeting daily service commitments through continuous SLA tracking.</li>
-          <li>Created the team's first KPI reporting structure in Excel (Pivot Tables, Power Query), giving management daily visibility into service and cost performance.</li>
-          <li>Traced service failures to root cause and implemented fixes before they became customer escalations.</li>
-        </ul>
-      </div>
+      <div><h3>Operations &amp; Delivery Manager · I-Way Transport</h3><div class="scope">Managed day-to-day operations of a 115+ truck fleet, including carrier and vendor coordination with daily SLA accountability.</div>
+        <ul><li>Directed dispatch, load planning, and carrier coordination across the fleet, meeting daily service commitments through continuous SLA tracking.</li><li>Created the team's first KPI reporting structure in Excel (Pivot Tables, Power Query), giving management daily visibility into service and cost performance.</li><li>Traced service failures to root cause and implemented fixes before they became customer escalations.</li></ul></div>
     </div>
-
     <div class="xp reveal">
       <div class="xp-when"><b>2017 — 2020</b>Brampton, ON</div>
-      <div>
-        <h3>Project Coordinator · Truck-IT</h3>
-        <div class="scope">Coordinated new-customer implementations and third-party fleet technology deployments.</div>
-        <ul>
-          <li>Deployed GPS and fleet telematics with third-party technology vendors across multiple customer sites.</li>
-          <li>Brought new customers live using implementation checklists, aligning customer, operations, and technical teams on scope and timelines.</li>
-        </ul>
-      </div>
+      <div><h3>Project Coordinator · Truck-IT</h3><div class="scope">Coordinated new-customer implementations and third-party fleet technology deployments.</div>
+        <ul><li>Deployed GPS and fleet telematics with third-party technology vendors across multiple customer sites.</li><li>Brought new customers live using implementation checklists, aligning customer, operations, and technical teams on scope and timelines.</li></ul></div>
     </div>
   </div>
 </section>
@@ -476,79 +427,47 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
 <!-- CERTIFICATIONS -->
 <section id="certifications">
   <div class="wrap">
-    <div class="reveal">
-      <div class="sec-label">Independently verifiable</div>
-      <h2 class="sec">Certifications</h2>
-      <p class="sec-intro">Each credential links to its issuing authority for direct verification.</p>
-    </div>
-
-    <div class="cert reveal">
-      <div>
-        <div class="cert-nm">Project Management Professional (PMP)</div>
-        <div class="cert-is">Project Management Institute</div>
-      </div>
-      <a class="verify" href="https://www.credly.com/badges/0f325ac4-e65f-42a2-98cd-3b52683b89c8/public_url" target="_blank" rel="noopener noreferrer">
-        Verify <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
-      </a>
-    </div>
-
-    <div class="cert reveal">
-      <div>
-        <div class="cert-nm">Post Graduate Diploma — Project Management</div>
-        <div class="cert-is">Transcript available on request</div>
-      </div>
-      <span class="onreq">On request</span>
-    </div>
-
-    <div class="cert reveal">
-      <div>
-        <div class="cert-nm">Post Graduate Diploma — Construction Management</div>
-        <div class="cert-is">Transcript available on request</div>
-      </div>
-      <span class="onreq">On request</span>
-    </div>
+    <div class="reveal"><div class="sec-label">Independently verifiable</div><h2 class="sec">Certifications</h2><p class="sec-intro">Each credential links to its issuing authority for direct verification.</p></div>
+    <div class="cert reveal"><div><div class="cert-nm">Project Management Professional (PMP)</div><div class="cert-is">Project Management Institute · Credential #4182203 · In good standing</div></div><a class="verify" href="https://www.credly.com/badges/0f325ac4-e65f-42a2-98cd-3b52683b89c8/public_url" target="_blank" rel="noopener noreferrer">Verify <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></a></div>
+    <div class="cert reveal"><div><div class="cert-nm">Post Graduate Diploma — Project Management</div><div class="cert-is">Transcript available on request</div></div><span class="onreq">On request</span></div>
+    <div class="cert reveal"><div><div class="cert-nm">Post Graduate Diploma — Construction Management</div><div class="cert-is">Transcript available on request</div></div><span class="onreq">On request</span></div>
   </div>
 </section>
 
 <!-- CONTACT -->
 <section id="contact" class="contact">
   <div class="wrap reveal">
-    <div class="eyebrow on-dark">Contact</div>
-    <h2>Let's talk supplier governance</h2>
-    <p>Open to conversations about supplier management, vendor governance, third-party risk, and contract compliance. Happy to walk through any of the tools above, or the governance model behind them.</p>
+    <div class="eyebrow">Contact</div>
+    <h2 data-srm="Let's talk supplier governance" data-spt="Let's talk supply chain operations">Let's talk supplier governance</h2>
+    <p>Open to conversations about supplier management, vendor governance, third-party risk, supply planning, transportation management, and contract compliance. Happy to walk through any of the tools above.</p>
     <div class="c-links">
-      <a href="mailto:vaibhavvasishth@gmail.com">vaibhavvasishth@gmail.com</a>
-      <a href="tel:+16479171786">647-917-1786</a>
-      <a href="https://www.linkedin.com/in/vaibhavvasishth-pmp" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+      <a href="mailto:vaibhavvasishth@gmail.com">✉ vaibhavvasishth@gmail.com</a>
+      <a href="tel:+16479171786">☏ 647-917-1786</a>
+      <a href="https://www.linkedin.com/in/vaibhavvasishth-pmp" target="_blank" rel="noopener noreferrer">in LinkedIn ↗</a>
     </div>
     <div class="loc">Toronto, Ontario, Canada</div>
   </div>
 </section>
 
-<footer>
-  <div class="foot-in">
-    <span>© <span id="yr"></span> Vaibhav Vasishth</span>
-    <span>Supplier Relationship &amp; Vendor Governance · Toronto, ON</span>
-  </div>
-</footer>
+<footer><div class="foot-in"><span>© <span id="yr"></span> Vaibhav Vasishth</span><span>Supplier Relationship &amp; Vendor Governance · Toronto, ON</span></div></footer>
 
 <script>
 (function(){
   document.getElementById('yr').textContent = new Date().getFullYear();
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // scroll reveal
   var els = document.querySelectorAll('.reveal');
   if (!('IntersectionObserver' in window) || reduce) {
     els.forEach(function(el){ el.classList.add('in'); });
   } else {
     var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-      });
+      entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
     }, { threshold: .1, rootMargin: '0px 0px -40px 0px' });
     els.forEach(function(el){ io.observe(el); });
   }
 
+  // count-up (starts from the real number, animates on scroll)
   function runCount(el){
     var target = parseFloat(el.dataset.count),
         pre = el.dataset.prefix || '',
@@ -567,26 +486,23 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
   var counters = document.querySelectorAll('[data-count]');
   if ('IntersectionObserver' in window) {
     var co = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if (e.isIntersecting) { runCount(e.target); co.unobserve(e.target); }
-      });
+      entries.forEach(function(e){ if (e.isIntersecting) { runCount(e.target); co.unobserve(e.target); } });
     }, { threshold: .5 });
     counters.forEach(function(el){ co.observe(el); });
   } else { counters.forEach(runCount); }
 
-  var btns = document.querySelectorAll('.filter'),
-      cards = document.querySelectorAll('.proj');
+  // filters
+  var btns = document.querySelectorAll('.filter'), cards = document.querySelectorAll('.proj');
   btns.forEach(function(b){
     b.addEventListener('click', function(){
       btns.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
       b.setAttribute('aria-pressed','true');
       var f = b.dataset.filter;
-      cards.forEach(function(card){
-        card.classList.toggle('hide', f !== 'all' && card.dataset.cat !== f);
-      });
+      cards.forEach(function(card){ card.classList.toggle('hide', f !== 'all' && card.dataset.cat !== f); });
     });
   });
 
+  // scroll spy
   var navAs = document.querySelectorAll('.nav-links a');
   var sectionIds = [];
   navAs.forEach(function(a){
@@ -594,16 +510,36 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
     if (id) sectionIds.push({ id: id, el: document.getElementById(id), a: a });
   });
   function updateActive(){
-    var scrollY = window.scrollY + 100;
+    var scrollY = window.scrollY + 120;
     var current = null;
-    sectionIds.forEach(function(s){
-      if (s.el && s.el.offsetTop <= scrollY) current = s;
-    });
+    sectionIds.forEach(function(s){ if (s.el && s.el.offsetTop <= scrollY) current = s; });
     navAs.forEach(function(a){ a.classList.remove('active'); });
     if (current) current.a.classList.add('active');
   }
   window.addEventListener('scroll', updateActive, { passive: true });
   updateActive();
+
+  // ROLE TRACK TOGGLE
+  window.setTrack = function(track) {
+    var toggleBtns = document.querySelectorAll('.role-toggle button');
+    toggleBtns.forEach(function(b){ b.classList.remove('active'); });
+    if (track === 'spt') toggleBtns[1].classList.add('active');
+    else toggleBtns[0].classList.add('active');
+
+    // Swap all elements with data-srm / data-spt attributes
+    document.querySelectorAll('[data-srm]').forEach(function(el){
+      var val = el.getAttribute('data-' + track);
+      if (val) {
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = val;
+        else el.textContent = val;
+      }
+    });
+    // Swap chip text (not all chips have data attrs)
+    document.querySelectorAll('.chip[data-' + track + ']').forEach(function(el){
+      var val = el.getAttribute('data-' + track);
+      if (val) el.textContent = val;
+    });
+  };
 })();
 </script>
 </body>
