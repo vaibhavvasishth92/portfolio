@@ -43,9 +43,19 @@ h2.sec{font-size:clamp(26px,3.4vw,36px);font-weight:700;margin-bottom:14px}
 .brand b{font-family:'Archivo',sans-serif;font-weight:700;font-size:18px;display:block;letter-spacing:-.01em;color:#fff}
 .brand span{font-size:13px;color:var(--sub-dark);display:block;line-height:1.3}
 .nav-links{margin-left:auto;display:flex;gap:20px}
-.nav-links a{font-size:13.5px;color:var(--sub-dark);text-decoration:none;padding:3px 0;border-bottom:1.5px solid transparent;transition:color .18s,border-color .18s}
+.nav-links a{font-size:13.5px;color:var(--sub-dark);text-decoration:none;padding:3px 0;border-bottom:1.5px solid transparent;transition:color .18s,border-color .18s;white-space:nowrap}
 .nav-links a:hover,.nav-links a:focus-visible,.nav-links a.active{color:#fff;border-bottom-color:#D4A843}
-.nav-cta{display:flex;gap:9px}
+.nav-cta{display:flex;gap:9px;flex-shrink:0}
+@media(max-width:860px){
+  .nav-in{flex-wrap:wrap}
+  .nav-links{width:100%;order:3;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:18px;padding:10px 0 6px;margin-left:0;border-top:1px solid rgba(255,255,255,.08);mask-image:linear-gradient(to right,#000 85%,transparent);-webkit-mask-image:linear-gradient(to right,#000 85%,transparent)}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-links a{font-size:14px}
+  .nav-cta{margin-left:auto}
+}
+@media(max-width:500px){
+  .nav-cta .btn:first-child{display:none}
+}
 .btn{display:inline-flex;align-items:center;gap:7px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;padding:9px 16px;transition:all .18s;white-space:nowrap;border:none;cursor:pointer}
 .btn:hover{transform:translateY(-1px)}
 .btn-ghost{border:1px solid rgba(255,255,255,.15);color:#fff;background:transparent}
@@ -54,8 +64,6 @@ h2.sec{font-size:clamp(26px,3.4vw,36px);font-weight:700;margin-bottom:14px}
 .btn-solid:hover{opacity:.9;box-shadow:0 0 0 2px rgba(212,168,67,.4)}
 .btn-onDark{border:1px solid var(--hair-dark);color:#fff}
 .btn-onDark:hover{border-color:#D4A843;color:#D4A843;box-shadow:0 0 0 1px #D4A843;background:transparent}
-@media(max-width:1000px){.nav-links{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:1;min-width:0}.nav-links::-webkit-scrollbar{display:none}}
-@media(max-width:620px){.nav-cta .btn:first-child{display:none}}
 
 /* HERO */
 .hero{background:var(--deep);color:#fff;padding:76px 0 0;position:relative;overflow:hidden}
@@ -348,6 +356,25 @@ footer{background:var(--deep);border-top:1px solid var(--hair-dark);padding:24px
         <div class="proj-foot">
           <span class="stack">Web Application</span><span class="stack">Data Visualization</span><span class="stack">Phase-Gate Methodology</span><span class="stack">Schedule Variance</span><span class="stack">Milestone Tracking</span>
           <a class="live" href="gates.html" target="_blank" rel="noopener noreferrer">View live →</a>
+        </div>
+      </article>
+
+      <article class="proj reveal" data-cat="pm">
+        <div class="proj-meta"><span class="client">Personal build · Process Design</span><span class="tag" style="background:#E3E8F5;color:#2E3E8F">Workflow / Operations</span></div>
+        <h3>Customer Onboarding Workflow Portal</h3>
+        <p style="font-weight:600;color:var(--ink);margin-bottom:8px">Designed the end-to-end intake-to-go-live workflow used to onboard new customers, with built-in parallel review routing and full transparency for all parties.</p>
+        <p>A working portal where prospective customers fill an intake questionnaire, which automatically routes to the Onboarding Team and Risk Department for parallel review with defined SLAs. Both teams submit their assessments back on the portal. The customer or sales rep tracks progress through every stage in real time.</p>
+        <ul>
+          <li>Intake questionnaire captures company profile, service requirements, volume, revenue, and timeline, then routes automatically to two departments in parallel.</li>
+          <li>Pipeline dashboard shows every active application, its current stage, risk tier, days in process, and estimated revenue at a glance.</li>
+          <li>Each department has a defined SLA. The portal tracks whether reviews are on time and flags overdue assessments.</li>
+          <li>Drill into any application to see a full workflow timeline showing which stages are complete, which are in progress, and which are pending, with the responsible team named at each step.</li>
+          <li>Customers and sales reps see exactly where their application stands without needing to call or email anyone.</li>
+        </ul>
+        <div class="impact"><b>Business impact</b>Any organization that onboards customers, vendors, partners, or suppliers uses this to replace email chains and spreadsheet tracking with a structured workflow. The parallel routing cuts onboarding time by sending intake to multiple review teams at once instead of sequentially. Full transparency reduces status inquiry calls and builds trust from day one.</div>
+        <div class="proj-foot">
+          <span class="stack">Web Application</span><span class="stack">Workflow Design</span><span class="stack">Process Automation</span><span class="stack">SLA Management</span><span class="stack">Customer Experience</span>
+          <a class="live" href="onboarding.html" target="_blank" rel="noopener noreferrer">View live →</a>
         </div>
       </article>
 

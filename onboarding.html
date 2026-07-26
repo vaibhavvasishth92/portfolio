@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Onboarding Workflow Portal — Vaibhav Vasishth</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;padding:0}</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+var useState = React.useState, useMemo = React.useMemo, useCallback = React.useCallback;
+var BarChart = Recharts.BarChart, Bar = Recharts.Bar, XAxis = Recharts.XAxis, YAxis = Recharts.YAxis,
+    Tooltip = Recharts.Tooltip, ResponsiveContainer = Recharts.ResponsiveContainer, Cell = Recharts.Cell;
+
+var C = { bg:'#f8f9fb', panel:'#ffffff', deep:'#0D1B2A', accent:'#D4A843', ink:'#1a2332', sub:'#5A6B7D', hair:'#e2e6ec', ok:'#15803d', amber:'#b45309', red:'#b91c1c' };
+
+var STAGES = [
+  { id:'intake', label:'Intake Submitted', short:'1. Intake', dept:'Customer / Sales', sla:null },
+  { id:'onboarding_review', label:'Onboarding Review', short:'2. Onboarding Review', dept:'Onboarding Team', sla:'5 business days' },
+  { id:'risk_review', label:'Risk Assessment', short:'3. Risk Assessment', dept:'Risk Department', sla:'3 business days' },
+  { id:'pricing', label:'Pricing & Rate Sheet', short:'4. Pricing & Rates', dept:'Pricing / Sales', sla:'3 business days' },
+  { id:'credit', label:'Credit Terms Set', short:'5. Credit Terms', dept:'Finance / Credit', sla:'2 business days' },
+  { id:'contract', label:'Contract & Agreement', short:'6. Contract', dept:'Legal / Sales', sla:'5 business days' },
+  { id:'customer_signs', label:'Customer Signs', short:'7. Customer Signs', dept:'Customer / Sales', sla:null },
+  { id:'system_setup', label:'System Setup (TMS/EDI)', short:'8. System Setup', dept:'IT / Operations', sla:'3 business days' },
+  { id:'ops_setup', label:'Operational Setup', short:'9. Ops Setup', dept:'Operations', sla:'2 business days' },
+  { id:'test_shipment', label:'Test Shipment / Pilot', short:'10. Test Shipment', dept:'Operations / Customer', sla:null },
+  { id:'go_live', label:'Go-Live', short:'11. Go-Live', dept:'All Teams', sla:null },
+  { id:'review_30', label:'30-Day Review', short:'12. 30-Day Review', dept:'Account Manager', sla:'30 days post go-live' }
+];
+
+var INITIAL_APPS = [
+  { id:1, company:'Meridian Foods Inc.', contact:'Sarah Chen', email:'schen@meridianfoods.com', industry:'Manufacturing', volume:'500-2K', revenue:'$1M-$5M', services:['FTL','Warehousing'], stage:'review_30', stageIdx:11, risk:'Low', submitted:'2025-03-20', days:68 },
+  { id:2, company:'Apex Retail Group', contact:'James Okoye', email:'jokoye@apexretail.com', industry:'Retail', volume:'2K-10K', revenue:'Over $5M', services:['FTL','LTL','Last Mile'], stage:'contract', stageIdx:5, risk:'Medium', submitted:'2025-05-01', days:26 },
+  { id:3, company:'Northern Health Systems', contact:'Lisa Patel', email:'lpatel@northernhealth.ca', industry:'Healthcare', volume:'100-500', revenue:'$500K-$1M', services:['LTL','Cross-Border'], stage:'risk_review', stageIdx:2, risk:'High', submitted:'2025-06-01', days:12 },
+  { id:4, company:'TechVault Solutions', contact:'Michael Torres', email:'mtorres@techvault.io', industry:'Technology', volume:'Under 100', revenue:'Under $100K', services:['LTL'], stage:'intake', stageIdx:0, risk:'Pending', submitted:'2025-06-08', days:5 },
+  { id:5, company:'Prairie Grain Co-op', contact:'Robert Makwa', email:'rmakwa@prairiegrain.ca', industry:'Manufacturing', volume:'Over 10K', revenue:'Over $5M', services:['FTL','Intermodal'], stage:'onboarding_review', stageIdx:1, risk:'Medium', submitted:'2025-06-03', days:8 },
+  { id:6, company:'CityWide Distributors', contact:'Angela Kim', email:'akim@citywide.com', industry:'Retail', volume:'500-2K', revenue:'$500K-$1M', services:['LTL','Last Mile'], stage:'test_shipment', stageIdx:9, risk:'Low', submitted:'2025-04-28', days:32 },
+  { id:7, company:'Lakeshore Financial', contact:'David Tremblay', email:'dtremblay@lakeshorefin.ca', industry:'Financial Services', volume:'Under 100', revenue:'$100K-$500K', services:['LTL','Cross-Border'], stage:'intake', stageIdx:0, risk:'Pending', submitted:'2025-06-10', days:3 },
+  { id:8, company:'GreenLeaf Organics', contact:'Emma Bouchard', email:'ebouchard@greenleaf.ca', industry:'Manufacturing', volume:'100-500', revenue:'$100K-$500K', services:['FTL','Warehousing'], stage:'go_live', stageIdx:10, risk:'Low', submitted:'2025-04-01', days:52 },
+  { id:9, company:'Atlas Supply Chain', contact:'Kevin Wright', email:'kwright@atlassc.com', industry:'Transportation', volume:'2K-10K', revenue:'$1M-$5M', services:['FTL','Intermodal'], stage:'contract', stageIdx:5, risk:'Medium', submitted:'2025-05-12', days:20 },
+  { id:10, company:'Brampton City Services', contact:'Priya Sharma', email:'psharma@brampton.ca', industry:'Government', volume:'500-2K', revenue:'$500K-$1M', services:['FTL','LTL'], stage:'pricing', stageIdx:3, risk:'Low', submitted:'2025-05-25', days:15 },
+  { id:11, company:'Nova Pharma Ltd.', contact:'Dr. Amir Hassan', email:'ahassan@novapharma.ca', industry:'Healthcare', volume:'100-500', revenue:'$1M-$5M', services:['LTL','Cross-Border'], stage:'risk_review', stageIdx:2, risk:'High', submitted:'2025-05-30', days:14 },
+  { id:12, company:'WestCoast Timber', contact:'Jake Morrison', email:'jm@westcoast.ca', industry:'Manufacturing', volume:'2K-10K', revenue:'$1M-$5M', services:['FTL','Intermodal'], stage:'customer_signs', stageIdx:6, risk:'Low', submitted:'2025-05-08', days:24 },
+  { id:13, company:'QuickServe Foods', contact:'Maria Gonzalez', email:'mg@quickserve.com', industry:'Retail', volume:'500-2K', revenue:'$500K-$1M', services:['LTL','Last Mile'], stage:'intake', stageIdx:0, risk:'Pending', submitted:'2025-06-11', days:2 },
+  { id:14, company:'Maple Logistics', contact:'Tom Richardson', email:'tr@maple.ca', industry:'Transportation', volume:'Over 10K', revenue:'Over $5M', services:['FTL','LTL','Warehousing'], stage:'pricing', stageIdx:3, risk:'Low', submitted:'2025-05-20', days:18 },
+  { id:15, company:'DynaCorp Industries', contact:'Raj Mehta', email:'rm@dynacorp.com', industry:'Manufacturing', volume:'2K-10K', revenue:'$1M-$5M', services:['FTL','Warehousing'], stage:'system_setup', stageIdx:7, risk:'Medium', submitted:'2025-05-05', days:28 },
+  { id:16, company:'Summit Healthcare', contact:'Dr. Claire Wong', email:'cw@summit.ca', industry:'Healthcare', volume:'Under 100', revenue:'$100K-$500K', services:['LTL'], stage:'credit', stageIdx:4, risk:'Low', submitted:'2025-05-22', days:16 }
+];
+
+function h(tag, props) {
+  var args = [tag, props || null];
+  for (var i = 2; i < arguments.length; i++) args.push(arguments[i]);
+  return React.createElement.apply(null, args);
+}
+
+function StageBar(props) {
+  var idx = props.currentIdx;
+  return h('div', { style: { display:'flex', gap:'1px', marginBottom:'12px' } },
+    STAGES.map(function(s, i) {
+      var bg = i < idx ? C.ok : i === idx ? C.accent : '#e5e7eb';
+      var color = i <= idx ? '#fff' : '#9ca3af';
+      return h('div', { key: s.id, style: { flex:1, padding:'5px 2px', background:bg, color:color, fontSize:'7.5px', fontWeight:600, textAlign:'center', borderRadius: i===0?'6px 0 0 6px':i===11?'0 6px 6px 0':'0', lineHeight:1.2, overflow:'hidden' } }, s.short);
+    })
+  );
+}
+
+function Badge(props) {
+  return h('span', { style:{ fontSize:'10px', fontWeight:600, padding:'2px 8px', borderRadius:'999px', background:props.bg, color:props.color, whiteSpace:'nowrap' } }, props.text);
+}
+
+function getRiskStyle(r) {
+  if (r === 'High') return { bg:'#fecaca', color:C.red };
+  if (r === 'Medium') return { bg:'#fef3c7', color:C.amber };
+  if (r === 'Low') return { bg:'#d1fae5', color:C.ok };
+  return { bg:'#e5e7eb', color:C.sub };
+}
+
+/* Pipeline Dashboard */
+function PipelineDashboard(props) {
+  var apps = props.apps, onSelect = props.onSelect, onNewIntake = props.onNewIntake;
+
+  var stageCounts = STAGES.map(function(s) {
+    return { name: s.short, count: apps.filter(function(a){ return a.stage === s.id; }).length };
+  });
+
+  return h('div', null,
+    h('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px', flexWrap:'wrap', gap:'12px' } },
+      h('div', null,
+        h('h2', { style:{ fontFamily:'Archivo,sans-serif', fontSize:'22px', fontWeight:700, color:C.ink, margin:0 } }, 'Onboarding Pipeline'),
+        h('p', { style:{ color:C.sub, fontSize:'13px', margin:'4px 0 0' } }, apps.length + ' active applications across 12 workflow stages')
+      ),
+      h('button', { onClick:onNewIntake, style:{ background:C.accent, color:C.deep, border:'none', borderRadius:'999px', padding:'10px 20px', fontWeight:600, fontSize:'13px', cursor:'pointer' } }, '+ New Customer Intake')
+    ),
+
+    h('div', { style:{ background:C.panel, borderRadius:'12px', border:'1px solid '+C.hair, padding:'16px', marginBottom:'16px' } },
+      h('h3', { style:{ fontSize:'13px', fontWeight:600, color:C.ink, margin:'0 0 8px' } }, 'Applications by Stage'),
+      h(ResponsiveContainer, { width:'100%', height:380 },
+        h(BarChart, { data:stageCounts, layout:'vertical', margin:{ left:0, right:30, top:0, bottom:0 } },
+          h(XAxis, { type:'number', hide:true }),
+          h(YAxis, { type:'category', dataKey:'name', width:140, tick:{ fontSize:10.5 }, interval:0 }),
+          h(Tooltip, null),
+          h(Bar, { dataKey:'count', radius:[0,4,4,0], barSize:18 },
+            stageCounts.map(function(_, i) { return h(Cell, { key:i, fill: i >= 10 ? C.ok : C.accent }); }),
+            h(Recharts.LabelList, { dataKey:'count', position:'right', style:{ fontSize:11, fontWeight:600, fill:C.ink } })
+          )
+        )
+      )
+    ),
+
+    apps.map(function(app) {
+      var rs = getRiskStyle(app.risk);
+      var stageLabel = STAGES[app.stageIdx].label;
+      return h('div', { key:app.id, onClick:function(){ onSelect(app); },
+        style:{ background:C.panel, borderRadius:'12px', border:'1px solid '+C.hair, padding:'14px 16px', marginBottom:'8px', cursor:'pointer', transition:'border-color .18s' },
+        onMouseEnter:function(e){ e.currentTarget.style.borderColor=C.accent; },
+        onMouseLeave:function(e){ e.currentTarget.style.borderColor=C.hair; }
+      },
+        h('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px', flexWrap:'wrap', gap:'6px' } },
+          h('span', { style:{ fontWeight:600, fontSize:'15px', color:C.ink } }, app.company),
+          h('div', { style:{ display:'flex', gap:'6px' } },
+            h(Badge, { text:app.risk, bg:rs.bg, color:rs.color }),
+            h(Badge, { text:stageLabel, bg:C.accent+'22', color:C.accent })
+          )
+        ),
+        h(StageBar, { currentIdx:app.stageIdx }),
+        h('div', { style:{ display:'flex', gap:'14px', fontSize:'11px', color:C.sub, flexWrap:'wrap' } },
+          h('span', null, app.contact),
+          h('span', null, 'Submitted: '+app.submitted),
+          h('span', null, app.days+' days'),
+          h('span', null, app.revenue)
+        )
+      );
+    })
+  );
+}
+
+/* Application Detail with Advance button */
+function ApplicationDetail(props) {
+  var app = props.app, onBack = props.onBack, onAdvance = props.onAdvance;
+  var rs = getRiskStyle(app.risk);
+
+  var timeline = STAGES.map(function(s, i) {
+    var status = i < app.stageIdx ? 'Completed' : i === app.stageIdx ? 'In Progress' : 'Pending';
+    var days = i < app.stageIdx ? Math.floor(Math.random()*5)+1 : 0;
+    return { label:s.label, dept:s.dept, sla:s.sla, status:status, days:days };
+  });
+
+  var canAdvance = app.stageIdx < 11;
+
+  return h('div', null,
+    h('button', { onClick:onBack, style:{ background:'none', border:'none', color:C.accent, cursor:'pointer', fontWeight:600, fontSize:'14px', marginBottom:'14px', padding:0 } }, 'Back to Pipeline'),
+
+    h('div', { style:{ background:C.panel, borderRadius:'12px', border:'1px solid '+C.hair, padding:'20px', marginBottom:'14px' } },
+      h('div', { style:{ display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap:'8px', marginBottom:'12px' } },
+        h('div', null,
+          h('h2', { style:{ fontFamily:'Archivo,sans-serif', fontSize:'20px', fontWeight:700, color:C.ink, margin:0 } }, app.company),
+          h('p', { style:{ color:C.sub, fontSize:'13px', margin:'2px 0 0' } }, app.contact+' / '+app.email)
+        ),
+        h('div', { style:{ display:'flex', gap:'6px', alignItems:'center' } },
+          h(Badge, { text:app.risk, bg:rs.bg, color:rs.color }),
+          canAdvance ? h('button', { onClick:function(){ onAdvance(app.id); }, style:{ background:C.ok, color:'#fff', border:'none', borderRadius:'999px', padding:'6px 16px', fontWeight:600, fontSize:'12px', cursor:'pointer' } }, 'Advance to Next Stage') : h(Badge, { text:'Complete', bg:'#d1fae5', color:C.ok })
+        )
+      ),
+      h(StageBar, { currentIdx:app.stageIdx }),
+      h('div', { style:{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(130px, 1fr))', gap:'10px', marginTop:'12px' } },
+        [['Industry',app.industry],['Volume',app.volume],['Revenue',app.revenue],['Services',app.services.join(', ')],['Days in Process',String(app.days)]].map(function(pair) {
+          return h('div', { key:pair[0], style:{ background:C.bg, borderRadius:'8px', padding:'10px' } },
+            h('div', { style:{ fontSize:'10px', color:C.sub, fontWeight:600, textTransform:'uppercase', letterSpacing:'.05em' } }, pair[0]),
+            h('div', { style:{ fontSize:'13px', fontWeight:600, color: pair[0]==='Days in Process' && app.days > 30 ? C.amber : C.ink, marginTop:'3px' } }, pair[1])
+          );
+        })
+      )
+    ),
+
+    h('div', { style:{ background:C.panel, borderRadius:'12px', border:'1px solid '+C.hair, padding:'20px' } },
+      h('h3', { style:{ fontSize:'15px', fontWeight:600, color:C.ink, margin:'0 0 4px' } }, 'Workflow Timeline'),
+      h('p', { style:{ fontSize:'12px', color:C.sub, margin:'0 0 16px' } }, '12-stage onboarding process from intake through 30-day review'),
+      timeline.map(function(evt, i) {
+        var dotColor = evt.status==='Completed' ? C.ok : evt.status==='In Progress' ? C.accent : '#d1d5db';
+        var lineColor = evt.status==='Completed' ? C.ok : '#e5e7eb';
+        return h('div', { key:i, style:{ display:'flex', gap:'14px' } },
+          h('div', { style:{ display:'flex', flexDirection:'column', alignItems:'center', width:'18px', flexShrink:0 } },
+            h('div', { style:{ width: evt.status==='In Progress' ? '14px' : '12px', height: evt.status==='In Progress' ? '14px' : '12px', borderRadius:'50%', background:dotColor, border: evt.status==='In Progress' ? '2px solid '+C.accent : 'none', flexShrink:0 } }),
+            i < timeline.length-1 ? h('div', { style:{ width:'2px', flex:1, background:lineColor, minHeight:'24px' } }) : null
+          ),
+          h('div', { style:{ paddingBottom:'14px', flex:1 } },
+            h('div', { style:{ fontWeight:600, fontSize:'13px', color: evt.status==='Pending' ? '#9ca3af' : C.ink } }, evt.label),
+            h('div', { style:{ fontSize:'11px', color:C.sub, marginTop:'1px' } }, 'Assigned to: '+evt.dept),
+            evt.sla ? h('div', { style:{ fontSize:'10px', color:C.sub, marginTop:'1px', fontStyle:'italic' } }, 'SLA: '+evt.sla) : null,
+            evt.status==='Completed' ? h('div', { style:{ fontSize:'11px', color:C.ok, marginTop:'2px', fontWeight:500 } }, 'Completed in '+evt.days+' days') : null,
+            evt.status==='In Progress' ? h('div', { style:{ fontSize:'11px', color:C.accent, marginTop:'2px', fontWeight:500 } }, 'Currently in progress') : null
+          )
+        );
+      })
+    )
+  );
+}
+
+/* Intake Form */
+function IntakeForm(props) {
+  var onBack = props.onBack, onSubmit = props.onSubmit;
+  var formState = useState({ company:'', contact:'', email:'', industry:'', volume:'', revenue:'', timeline:'', services:[] });
+  var form = formState[0], setForm = formState[1];
+
+  function updateField(field, val) {
+    var next = {};
+    for (var k in form) next[k] = form[k];
+    next[field] = val;
+    setForm(next);
+  }
+
+  function toggleService(svc) {
+    var arr = form.services.slice();
+    var idx = arr.indexOf(svc);
+    if (idx >= 0) arr.splice(idx, 1); else arr.push(svc);
+    updateField('services', arr);
+  }
+
+  function handleSubmit() {
+    if (!form.company || !form.contact || !form.email) {
+      alert('Please fill in Company Name, Contact, and Email.');
+      return;
+    }
+    onSubmit(form);
+  }
+
+  var fields = [
+    { id:'company', label:'Company Name *', type:'text' },
+    { id:'contact', label:'Primary Contact *', type:'text' },
+    { id:'email', label:'Contact Email *', type:'text' },
+    { id:'industry', label:'Industry', type:'select', options:['Transportation','Manufacturing','Retail','Healthcare','Financial Services','Technology','Government','Other'] },
+    { id:'volume', label:'Monthly Volume', type:'select', options:['Under 100','100-500','500-2,000','2,000-10,000','Over 10,000'] },
+    { id:'revenue', label:'Annual Revenue', type:'select', options:['Under $100K','$100K-$500K','$500K-$1M','$1M-$5M','Over $5M'] },
+    { id:'timeline', label:'Desired Start', type:'select', options:['Under 2 weeks','2-4 weeks','1-3 months','3+ months'] }
+  ];
+
+  var services = ['Full Truckload','LTL','Intermodal','Warehousing','Last Mile','Cross-Border'];
+
+  return h('div', null,
+    h('button', { onClick:onBack, style:{ background:'none', border:'none', color:C.accent, cursor:'pointer', fontWeight:600, fontSize:'14px', marginBottom:'14px', padding:0 } }, 'Back to Pipeline'),
+    h('div', { style:{ background:C.panel, borderRadius:'12px', border:'1px solid '+C.hair, padding:'20px' } },
+      h('h2', { style:{ fontFamily:'Archivo,sans-serif', fontSize:'20px', fontWeight:700, color:C.ink, margin:'0 0 4px' } }, 'New Customer Intake'),
+      h('p', { style:{ color:C.sub, fontSize:'13px', margin:'0 0 20px' } }, 'Complete the questionnaire below. On submission, it routes automatically to the Onboarding Team and Risk Department for parallel review.'),
+
+      h('div', { style:{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'14px' } },
+        fields.map(function(f) {
+          return h('div', { key:f.id },
+            h('label', { style:{ fontSize:'12px', fontWeight:600, color:C.ink, display:'block', marginBottom:'4px' } }, f.label),
+            f.type === 'text' ?
+              h('input', { type:'text', value:form[f.id] || '', onChange:function(e){ updateField(f.id, e.target.value); }, style:{ width:'100%', padding:'8px 10px', border:'1px solid '+C.hair, borderRadius:'8px', fontSize:'13px', boxSizing:'border-box' } }) :
+              h('select', { value:form[f.id] || '', onChange:function(e){ updateField(f.id, e.target.value); }, style:{ width:'100%', padding:'8px 10px', border:'1px solid '+C.hair, borderRadius:'8px', fontSize:'13px', background:'#fff', boxSizing:'border-box' } },
+                h('option', { value:'' }, 'Select...'),
+                f.options.map(function(o){ return h('option', { key:o, value:o }, o); })
+              )
+          );
+        })
+      ),
+
+      h('div', { style:{ marginTop:'14px' } },
+        h('label', { style:{ fontSize:'12px', fontWeight:600, color:C.ink, display:'block', marginBottom:'4px' } }, 'Services Required'),
+        h('div', { style:{ display:'flex', flexWrap:'wrap', gap:'6px' } },
+          services.map(function(svc) {
+            var active = form.services.indexOf(svc) >= 0;
+            return h('button', { key:svc, type:'button', onClick:function(){ toggleService(svc); }, style:{ fontSize:'12px', color: active ? '#fff' : C.ink, display:'flex', alignItems:'center', gap:'4px', padding:'5px 12px', border:'1px solid '+(active ? C.accent : C.hair), borderRadius:'8px', cursor:'pointer', background: active ? C.accent : 'transparent', fontWeight: active ? 600 : 400 } }, svc);
+          })
+        )
+      ),
+
+      h('div', { style:{ marginTop:'16px', padding:'12px 14px', background:'#f0f4f8', borderRadius:'10px', borderLeft:'3px solid '+C.accent } },
+        h('div', { style:{ fontSize:'11px', fontWeight:600, color:C.accent, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'3px' } }, 'What happens next'),
+        h('div', { style:{ fontSize:'12px', color:C.ink, lineHeight:1.5 } },
+          'On submission, this intake routes to the Onboarding Team (5-day SLA) and Risk Department (3-day SLA) for parallel review. Then: Pricing, Credit Terms, Contract, Customer Signs, System Setup, Ops Setup, Test Shipment, Go-Live, and 30-Day Review. Track every stage in real time.'
+        )
+      ),
+
+      h('div', { style:{ marginTop:'18px', display:'flex', gap:'10px' } },
+        h('button', { onClick:handleSubmit, style:{ background:C.accent, color:C.deep, border:'none', borderRadius:'999px', padding:'10px 24px', fontWeight:600, fontSize:'13px', cursor:'pointer' } }, 'Submit Intake'),
+        h('button', { onClick:onBack, style:{ background:'none', color:C.sub, border:'1px solid '+C.hair, borderRadius:'999px', padding:'10px 24px', fontWeight:600, fontSize:'13px', cursor:'pointer' } }, 'Cancel')
+      )
+    )
+  );
+}
+
+/* Main App */
+function OnboardingPortal() {
+  var viewState = useState('pipeline'), view = viewState[0], setView = viewState[1];
+  var selState = useState(null), selectedId = selState[0], setSelectedId = selState[1];
+  var appsState = useState(INITIAL_APPS), apps = appsState[0], setApps = appsState[1];
+  var nextIdState = useState(17), nextId = nextIdState[0], setNextId = nextIdState[1];
+
+  var selected = apps.find(function(a){ return a.id === selectedId; }) || null;
+
+  function handleSelect(app) { setSelectedId(app.id); setView('detail'); }
+  function handleBack() { setView('pipeline'); setSelectedId(null); }
+
+  function handleAdvance(appId) {
+    setApps(apps.map(function(a) {
+      if (a.id !== appId || a.stageIdx >= 11) return a;
+      var newIdx = a.stageIdx + 1;
+      return Object.assign({}, a, { stageIdx: newIdx, stage: STAGES[newIdx].id });
+    }));
+  }
+
+  function handleIntakeSubmit(formData) {
+    var today = new Date();
+    var dateStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    var risks = ['Low','Medium','Low','Low','Medium'];
+    var newApp = {
+      id: nextId,
+      company: formData.company,
+      contact: formData.contact,
+      email: formData.email,
+      industry: formData.industry || 'Other',
+      volume: formData.volume || 'TBD',
+      revenue: formData.revenue || 'TBD',
+      services: formData.services.length > 0 ? formData.services : ['TBD'],
+      stage: 'intake',
+      stageIdx: 0,
+      risk: 'Pending',
+      submitted: dateStr,
+      days: 0
+    };
+    setApps([newApp].concat(apps));
+    setNextId(nextId + 1);
+    setSelectedId(newApp.id);
+    setView('detail');
+  }
+
+  var goLiveCount = apps.filter(function(a){ return a.stageIdx >= 10; }).length;
+
+  return h('div', { style:{ background:C.bg, minHeight:'100vh', fontFamily:"'IBM Plex Sans',system-ui,sans-serif" } },
+    h('div', { style:{ background:C.deep, padding:'14px 20px', borderBottom:'1px solid rgba(212,168,67,.15)' } },
+      h('div', { style:{ maxWidth:'1100px', margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'8px' } },
+        h('div', null,
+          h('div', { style:{ fontFamily:'Archivo,sans-serif', fontWeight:700, fontSize:'16px', color:'#fff' } }, 'Customer Onboarding Portal'),
+          h('div', { style:{ fontSize:'11px', color:C.accent } }, 'End-to-End Workflow Management / 12 Stages')
+        ),
+        h('div', { style:{ display:'flex', gap:'12px', fontSize:'11px' } },
+          h('span', { style:{ color:'#9DB0C4' } }, 'Pipeline: '+apps.length+' active'),
+          h('span', { style:{ color:C.ok } }, 'Go-Live: '+goLiveCount)
+        )
+      )
+    ),
+    h('div', { style:{ maxWidth:'1100px', margin:'0 auto', padding:'20px' } },
+      view === 'pipeline' ? h(PipelineDashboard, { apps:apps, onSelect:handleSelect, onNewIntake:function(){ setView('intake'); } }) : null,
+      view === 'detail' && selected ? h(ApplicationDetail, { app:selected, onBack:handleBack, onAdvance:handleAdvance }) : null,
+      view === 'intake' ? h(IntakeForm, { onBack:handleBack, onSubmit:handleIntakeSubmit }) : null
+    ),
+    h('div', { style:{ background:C.deep, padding:'14px', marginTop:'30px', textAlign:'center' } },
+      h('div', { style:{ fontSize:'11px', color:'#9DB0C4' } }, 'Customer Onboarding Workflow Portal / Vaibhav Vasishth / Synthetic demo data')
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(OnboardingPortal));
+</script>
+</body>
+</html>
